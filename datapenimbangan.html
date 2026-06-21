@@ -677,9 +677,22 @@ async function getListPenimbangan(){
 
 
 window.addEventListener("DOMContentLoaded", () => {
+
+  // tanggal hari ini
+  const tanggal = document.getElementById("tanggal");
+
+  const today = new Date();
+  const yyyy = today.getFullYear();
+  const mm = String(today.getMonth() + 1).padStart(2, "0");
+  const dd = String(today.getDate()).padStart(2, "0");
+
+  tanggal.value = `${yyyy}-${mm}-${dd}`;
+
+  // load data terakhir
   getListPenimbangan();
 
   setInterval(getListPenimbangan, 5000);
+
 });
 
 </script>
