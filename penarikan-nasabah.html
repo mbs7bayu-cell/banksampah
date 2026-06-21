@@ -1,0 +1,467 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<link rel="manifest" href="/manifest.json">
+<meta name="theme-color" content="#3B82C4" id="themeColor">
+<title>Penarikan Nasabah</title>
+<script src="auth.js"></script>
+<style>
+body{font-family:sans-serif;background:#f5f5f5;padding:16px}
+.card{background:white;padding:16px;border-radius:12px; margin-bottom: 20px;}
+
+input,textarea{
+  width:100%;
+  padding:10px;
+  margin:8px 0;
+  border-radius:8px;
+  border:1px solid #ccc;
+  box-sizing:border-box;
+}
+
+button{
+  width:100%;
+  padding:12px;
+  background:#4E6E58;
+  color:white;
+  border:none;
+  border-radius:8px;
+  cursor:pointer;
+  transition:0.2s;
+  margin-bottom: 10px;
+}
+
+button:hover{
+  background:#333333;
+  transform:translateY(-2px);
+}
+
+button:active{
+  transform:translateY(0);
+}
+
+button:disabled{
+  background:#999;
+  cursor:not-allowed;
+}
+
+.btnDataNasabah{
+  background:#4E6E58;
+}
+
+.btnDataNasabah:hover{
+  background:#333333;
+}
+
+.btnHapusPenarikan {
+  background: #ff4d4d;
+  color: white;
+  border: none;
+  padding: 6px 12px;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: 0.2s;
+  width: auto;
+  margin-top: 8px;
+}
+
+.card h2 {
+  color: #546B41;
+}
+
+.list-item {
+  padding: 10px;
+  border-bottom: 1px solid #eee;
+}
+
+.btnHapusNasabah {
+  background: #ff4d4d;
+  color: white;
+  padding: 5px 10px;
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: 0.2s;
+  margin-top: 8px;
+  width: auto;
+}
+
+img{width:50%;margin-top:10px;border-radius:8px;justify-content:center;display:block;margin-left:auto;margin-right:auto}
+
+.loader {
+  border: 3px solid #eee;
+  border-top: 3px solid #2d89ef;
+  border-radius: 50%;
+  width: 20px;
+  height: 20px;
+  animation: spin 1s linear infinite;
+}
+
+.item-nasabah{
+  padding: 8px;
+  cursor: pointer;
+  border-left: black 1px solid;
+  border-bottom: black 1px solid;
+  border-right: black 1px solid;
+  border-bottom-left-radius: 8px;
+  border-bottom-right-radius: 8px;
+}
+
+.item-nasabah:hover{
+  background: #eee;
+}
+
+.btnPrint {
+  background-color: #666666;
+}
+
+.btnPrintKhusus {
+  background-color: #666666;
+}
+
+@keyframes spin {
+  0% { transform: rotate(0deg);}
+  100% { transform: rotate(360deg);}
+}
+
+@media (min-width: 600px) {
+  button {
+    width: 100%;
+    margin: 10px auto;
+    display: block;
+  }
+
+  .card {
+    max-width: 400px;
+    margin: 20px auto;
+  }
+
+  .btnCopy {
+    width: auto;
+    margin: 10px;
+  }
+
+  .btnHapusNasabah {
+    width: auto;
+    margin-top: 10px;
+    margin-left: 0px;
+  }
+  
+
+ 
+}
+</style>
+</head>
+
+<body>
+
+<div class="card">
+<h2>Penarikan Nasabah</h2>
+
+<div class="listProduk">
+    <input id="tanggal" type="date" required>
+    <input id="nama" placeholder="Nama" required>
+    <div id="hasilNama"></div>
+    <input id="nasabahId" placeholder="Nasabah ID" required readonly>
+    <input id="nominal" type="number" placeholder="Nominal Penarikan" required>
+</div>
+
+<p id="status"></p>
+<div id="loading" class="loader" style="display:none;"></div>
+<button id="btnSimpan" type="submit">Simpan</button>
+</div>
+
+<div class="card">
+  <p style="margin:0; padding:0; color:#777; font-size:12px;">Terakhir ditambahkan:</p>
+  <div id="listTerakhir">
+    <p>Memuat...</p>
+  </div>
+</div>
+
+<div class="card">
+  <button id="btnPenarikan">Detail Penarikan</button>
+  <button id="btnDashboard">Kembali</button>
+</div>
+
+
+
+<footer id="footer" style="text-align:center; margin-top:40px; color:#777; font-size:14px;">
+  © 2026 Banksampahdigital by mbayusubagja
+</footer>
+
+<script src="config.js"></script>
+
+<script>
+// ================= SIMPAN DATA =================
+const btnSimpan = document.getElementById("btnSimpan");
+const status = document.getElementById("status");
+const btnDashboard = document.getElementById("btnDashboard");
+const listTerakhir = document.getElementById("listTerakhir");
+const btnDataNasabah = document.getElementById("btnDataNasabah");
+const btnPenarikan = document.getElementById("btnPenarikan");
+
+btnPenarikan.addEventListener("click", () =>{
+    window.location.href = "penarikan.html"
+});
+
+
+btnDashboard.addEventListener("click", () => {
+    window.location.href = "datanasabah.html"
+});
+
+// ================= RESET FORM =================
+function resetForm(){
+
+  document.getElementById("nama").value = "";
+  document.getElementById("nasabahId").value = "";
+  document.getElementById("nominal").value = "";
+
+}
+
+
+// ================= PILIH NASABAH =================
+function pilihNasabah(item){
+
+  // isi form
+  document.getElementById("nama").value = item.nama.toUpperCase();
+
+  document.getElementById("nasabahId").value = item.id;
+
+  hasilNama.innerHTML = "";
+  
+}
+
+//================== cari nama nasabah =================
+const inputNama = document.getElementById("nama");
+const hasilNama = document.getElementById("hasilNama");
+
+btnSimpan.addEventListener("click", async function () {
+
+  const tanggal = document.getElementById("tanggal").value;
+  const nama = document.getElementById("nama").value.toUpperCase();
+  const nasabahId = document.getElementById("nasabahId").value;
+  const nominalPenarikan = Number(
+    document.getElementById("nominal").value.replace(/\D/g, "")
+  ) || 0;
+  const error = validasi();
+  if(error){
+    showToast(error);
+    return;
+  }
+
+  btnSimpan.disabled = true;
+  btnSimpan.innerText = "Menyimpan...";
+  status.innerText = "Proses...";
+
+  const data = {
+  mode: "simpanPenarikan",
+  tanggal:tanggal,
+  nama: nama,
+  nasabahId: nasabahId,
+  nominalPenarikan:nominalPenarikan 
+};
+
+  try {
+
+    const res = await fetch(CONFIG.API_URL, {
+      method: "POST",
+      body: JSON.stringify(data)
+    });
+
+    const r = await res.json();
+
+    btnSimpan.disabled = false;
+    btnSimpan.innerText = "Simpan";
+
+    if (!r.ok) {
+      status.innerText = r.message || "❌ Gagal menyimpan";
+      return;
+    }
+
+    status.innerHTML =
+      "✅ " + "Penarikan nasabah atas nama " + "<b>" + nama + "</b>" + " tersimpan.";
+    resetForm();
+    getPenarikanTerakhir();
+
+
+  } catch (err) {
+    console.log(err);
+    btnSimpan.disabled = false;
+    btnSimpan.innerText = "Simpan";
+    status.innerText = "❌ Gagal menyimpan";
+  }
+
+});
+
+
+inputNama.addEventListener("input", async function () {
+
+  const keyword = inputNama.value.trim();
+
+  if(keyword.length < 2){
+    hasilNama.innerHTML = "";
+    return;
+  }
+
+  try{
+
+    const res = await fetch(
+      `${CONFIG.API_URL}?action=cariNasabah&keyword=${encodeURIComponent(keyword)}`
+    );
+
+    const data = await res.json();
+
+    hasilNama.innerHTML = "";
+
+    if(data.ok){
+
+      data.data.forEach(item => {
+
+        hasilNama.innerHTML += `
+          <div class="item-nasabah"
+            onclick='pilihNasabah(${JSON.stringify(item)})'>
+            ${item.nama}
+          </div>
+        `;
+
+
+      });
+
+    }
+
+  }catch(err){
+
+    console.error(err);
+
+    hasilNama.innerHTML = `
+      <p>Error saat mencari nasabah</p>
+    `;
+
+  }
+
+});
+
+//============== validasi input form ==================
+
+function validasi() {
+  if (!document.getElementById("nama").value) return "Nama Nasabah wajib diisi";
+  if (!document.getElementById("nasabahId").value) return "ID Nasabah belum ada, silakan input data nasabah terlebih dahulu";
+  if (!document.getElementById("tanggal").value) return "Pilih tanggal penimbangan terlebih dahulu";
+  if ((Number(document.getElementById("nominal").value) || 0) <= 0) {
+    return "Nominal penarikan tidak valid";
+  }
+  return null;
+}
+
+// ================= TOAST =================
+function showToast(msg) {
+  const div = document.createElement("div");
+  div.innerText = msg;
+
+  div.style.position = "fixed";
+  div.style.bottom = "20px";
+  div.style.left = "50%";
+  div.style.transform = "translateX(-50%)";
+  div.style.background = "#333";
+  div.style.color = "#fff";
+  div.style.padding = "10px 20px";
+  div.style.borderRadius = "8px";
+  div.style.zIndex = "9999";
+
+  document.body.appendChild(div);
+
+  setTimeout(() => {
+    div.remove();
+  }, 2000);
+}
+
+async function getPenarikanTerakhir(){
+
+  try {
+
+    const res = await fetch(
+      CONFIG.API_URL + "?action=getPenarikanTerakhir"
+    );
+
+    const r = await res.json();
+
+    console.log(r);
+
+    if(!r.ok){
+      listTerakhir.innerText = "Gagal memuat";
+      return;
+    }
+
+    listTerakhir.innerHTML = r.data.map(n => `
+      <div class="list-item">
+        <b>${n.nama}</b><br>
+        Nominal Penarikan: Rp ${
+          new Intl.NumberFormat("id-ID").format(
+            Number(n.nominalPenarikan) || 0
+          )
+        }<br>
+        <button class="btnHapusPenarikan" id="btnHapusPenarikan" onclick="hapusPenarikan(event, '${n.id}')">Hapus</button>
+      </div>
+    `).join("");
+
+  } catch(err){
+
+    console.log(err);
+
+  }
+
+}
+
+//hapus penarikan
+async function hapusPenarikan(e, id){
+
+  e.stopPropagation();
+  
+  if(!confirm("Hapus penarikan ini?")) return;
+
+  console.log("Hapus penarikan dengan id:", id);
+
+  try{
+
+    const body = new URLSearchParams({
+      mode: "hapusPenarikan",
+      id: id
+    });
+
+    const res = await fetch(CONFIG.API_URL,{
+      method:"POST",
+      body: body
+    });
+
+    const r = await res.json();
+
+    if(!r.ok){
+      alert(r.message);
+      return;
+    }
+
+    alert("Penarikan berhasil dihapus");
+
+    getPenarikanTerakhir();
+
+  }catch(err){
+
+    console.log(err);
+    alert("Gagal menghapus penarikan");
+
+  }
+
+}
+
+window.addEventListener("DOMContentLoaded", () => {
+  getPenarikanTerakhir();
+
+  setInterval(getPenarikanTerakhir, 20000);
+});
+
+
+</script>
+<script src="printpenarikan.js"></script> 
+
+</body>
+</html>

@@ -1,0 +1,703 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<link rel="manifest" href="/manifest.json">
+<meta name="theme-color" content="#3B82C4" id="themeColor">
+<title>Tambah Penimbangan</title>
+<script src="auth.js"></script>
+<style>
+body{font-family:sans-serif;background:#f5f5f5;padding:16px}
+.card{background:white;padding:16px;border-radius:12px; margin-bottom: 20px;}
+
+input,textarea{
+  width:100%;
+  padding:10px;
+  margin:8px 0;
+  border-radius:8px;
+  border:1px solid #ccc;
+  box-sizing:border-box;
+}
+
+button{
+  width:100%;
+  padding:12px;
+  background:#4E6E58;
+  color:white;
+  border:none;
+  border-radius:8px;
+  cursor:pointer;
+  transition:0.2s;
+  margin-bottom: 10px;
+}
+
+button:hover{
+  background:#333333;
+  transform:translateY(-2px);
+}
+
+button:active{
+  transform:translateY(0);
+}
+
+button:disabled{
+  background:#999;
+  cursor:not-allowed;
+}
+
+.card h2 {
+  color: #4E6E58;
+}
+
+img{width:50%;margin-top:10px;border-radius:8px;justify-content:center;display:block;margin-left:auto;margin-right:auto}
+
+.item-nasabah{
+  padding: 8px;
+  cursor: pointer;
+  border-left: black 1px solid;
+  border-bottom: black 1px solid;
+  border-right: black 1px solid;
+  border-bottom-left-radius: 8px;
+  border-bottom-right-radius: 8px;
+}
+
+.item-nasabah:hover{
+  background: #eee;
+}
+
+.item-jenis-sampah{
+  padding: 8px;
+  cursor: pointer;
+  border-left: black 1px solid;
+  border-bottom: black 1px solid;
+  border-right: black 1px solid;
+  border-bottom-left-radius: 8px;
+  border-bottom-right-radius: 8px;
+}
+
+.item-jenis-sampah:hover{
+  background: #eee;
+}
+
+.btnHapusPenimbangan {
+  background: #ff4d4d;
+  color: white;
+  border: none;
+  padding: 6px 12px;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: 0.2s;
+  width: auto;
+  margin-top: 8px;
+}
+
+.loader {
+  border: 3px solid #eee;
+  border-top: 3px solid #2d89ef;
+  border-radius: 50%;
+  width: 20px;
+  height: 20px;
+  animation: spin 1s linear infinite;
+}
+
+
+
+@keyframes spin {
+  0% { transform: rotate(0deg);}
+  100% { transform: rotate(360deg);}
+}
+
+@media (min-width: 600px) {
+  button {
+    width: 100%;
+    margin: 10px auto;
+    display: block;
+  }
+
+  .card {
+    max-width: 400px;
+    margin: 20px auto;
+  }
+
+  .btnHapusPenimbangan {
+    width: auto;
+    margin-top: 10px;
+    margin-left: 0px;
+  }
+  
+
+  
+}
+
+
+</style>
+</head>
+
+<body>
+
+<div class="card">
+<h2>Tambah Penimbangan</h2>
+
+<div class="listTransaksi">
+    <input id="tanggal" type="date" placeholder="Tanggal" required>
+    <input id="nama" type="text" placeholder="Nama Nasabah" required>
+    <div id="hasilNama"></div>
+    <input id="nasabahId" type="hidden" placeholder="Nasabah ID" required>
+    <input id="jenisSampah" placeholder="Jenis Sampah" required>
+    <div id="hasilSampah"></div>
+    <input id="sampahId" type="hidden" placeholder="Sampah ID" required>
+    <input id="beratSampah" type="number" placeholder="Berat Sampah" required>
+    <input id="satuan" type="hidden" placeholder="Satuan" required readonly>
+    <input id="hargaNasabah" type="hidden" placeholder="Harga Nasabah" required>
+    <input id="hargaJual" type="hidden" placeholder="Harga Jual" required>
+    <input id="totalNasabah" type="hidden" placeholder="Total Nasabah" required readonly>
+    <input id="totalJual" type="hidden" placeholder="Total" readonly>
+</div>
+<p id="status"></p>
+<div id="loading" class="loader" style="display:none;"></div>
+<button id="btnSimpan" type="submit">Simpan</button>
+</div>
+
+<div class="card">
+  <p style="margin:0; padding:0; color:#777; font-size:12px;">Terakhir ditambahkan:</p>
+  <div id="listTerakhir">
+    <p>Memuat...</p>
+  </div>
+</div>
+
+<div class="card">
+<button id="btnSortir" class="btnSortir">SORTIR PERNIMBANGAN</button>
+<button id="btnPenimbangan" class="btnPenimbangan">DATA PENIMBANGAN NASABAH</button>
+<button id="btnDashboard">📊 MENU</button>
+</div>
+
+
+<footer id="footer" style="text-align:center; margin-top:40px; color:#777; font-size:14px;">
+  © 2026 Banksampahdigital by mbayusubagja
+</footer>
+
+<script src="config.js"></script>
+
+<script>
+// ================= SIMPAN DATA =================
+const btnSimpan = document.getElementById("btnSimpan");
+const status = document.getElementById("status");
+const btnDashboard = document.getElementById("btnDashboard");
+const btnPenimbangan = document.getElementById("btnPenimbangan");
+const btnSortir = document.getElementById("btnSortir");
+
+btnSortir.addEventListener("click", () => {
+  window.location.href = "sortir.html";
+});
+
+btnDashboard.addEventListener("click", () => {
+  window.location.href = "menu.html";
+});
+
+btnPenimbangan.addEventListener("click", () => {
+  window.location.href = "listpenimbangan.html";
+});
+
+btnSimpan.addEventListener("click", async function () {
+
+  const jenisSampah = document.getElementById("jenisSampah").value.toUpperCase();
+  const hargaNasabah = document.getElementById("hargaNasabah").value.replace(/\D/g, "");
+  const hargaJual = document.getElementById("hargaJual").value.replace(/\D/g, "");
+  const nama = document.getElementById("nama").value.toUpperCase();
+  const nasabahId = document.getElementById("nasabahId").value;
+  const sampahId = document.getElementById("sampahId").value;
+  const beratSampah = document.getElementById("beratSampah").value;
+  const totalJual = document.getElementById("totalJual").value.replace(/\D/g, "");
+  const tanggal = document.getElementById("tanggal").value;
+  const satuan = document.getElementById("satuan").value;
+  const totalNasabah = document.getElementById("totalNasabah").value.replace(/\D/g, "");
+
+  const error = validasi();
+
+  if(error){
+    showToast(error);
+    return;
+  }
+
+  btnSimpan.disabled = true;
+  btnSimpan.innerText = "Menyimpan...";
+  status.innerText = "Proses...";
+
+  const data = {
+  mode: "simpanDataPenimbangan",
+  tanggal: tanggal,
+  nama: nama,
+  nasabahId: nasabahId,
+  jenisSampah: jenisSampah,
+  sampahId: sampahId,
+  beratSampah: beratSampah,
+  hargaNasabah: hargaNasabah,
+  hargaJual: hargaJual,
+  totalJual: totalJual,
+  totalNasabah: totalNasabah,
+  satuan: satuan
+};
+
+  try {
+
+    const res = await fetch(CONFIG.API_URL, {
+      method: "POST",
+      body: JSON.stringify(data)
+    });
+
+    const r = await res.json();
+
+    btnSimpan.disabled = false;
+    btnSimpan.innerText = "Simpan";
+
+    if (!r.ok) {
+      console.log(r);
+      console.log(data);
+      status.innerText = "❌ Gagal menyimpan";
+      return;
+    }
+
+    status.innerHTML =
+      "✅ Penimbangan : " + "<b>" + nama + "</b>" + ", jenis sampah : " + "<b>" + jenisSampah + "</b>" + " tersimpan.";
+    resetForm();
+
+  } catch (err) {
+    console.log(err);
+    btnSimpan.disabled = false;
+    btnSimpan.innerText = "Simpan";
+    status.innerText = "❌ Gagal menyimpan";
+  }
+
+});
+
+// ================= VALIDASI =================
+function validasi() {
+  if (!document.getElementById("jenisSampah").value) return "Jenis Sampah wajib diisi";
+  if (!document.getElementById("nama").value) return "Nama Nasabah wajib diisi";
+  if (!document.getElementById("beratSampah").value) return "Berat Sampah wajib diisi";
+  if (!document.getElementById("nasabahId").value) return "ID Nasabah belum ada, silakan input data nasabah terlebih dahulu";
+  if (!document.getElementById("sampahId").value) return "ID Sampah belum ada, silakan input data sampah terlebih dahulu";
+  if (!document.getElementById("tanggal").value) return "Pilih tanggal penimbangan terlebih dahulu";
+  return null;
+}
+
+// ================= TOAST =================
+function showToast(msg) {
+  const div = document.createElement("div");
+  div.innerText = msg;
+
+  div.style.position = "fixed";
+  div.style.bottom = "20px";
+  div.style.left = "50%";
+  div.style.transform = "translateX(-50%)";
+  div.style.background = "#333";
+  div.style.color = "#fff";
+  div.style.padding = "10px 20px";
+  div.style.borderRadius = "8px";
+  div.style.zIndex = "9999";
+
+  document.body.appendChild(div);
+
+  setTimeout(() => {
+    div.remove();
+  }, 2000);
+}
+
+// ================= RESET FORM =================
+function resetForm(){
+  document.getElementById("jenisSampah").value = "";
+  document.getElementById("beratSampah").value = "";
+  document.getElementById("sampahId").value = "";
+  document.getElementById("nama").value = "";
+  document.getElementById("nasabahId").value = "";
+}
+
+// =================== cari nama nasabah =================
+const inputNama = document.getElementById("nama");
+const hasilNama = document.getElementById("hasilNama");
+
+let timeoutNama;
+let controllerNama;
+const cacheNasabah = {};
+
+inputNama.addEventListener("input", function () {
+
+  clearTimeout(timeoutNama);
+
+  timeoutNama = setTimeout(async () => {
+
+    const keyword = inputNama.value.trim();
+
+    if(keyword.length < 2){
+      hasilNama.innerHTML = "";
+      return;
+    }
+
+    // ambil dari cache
+    if(cacheNasabah[keyword]){
+      renderNasabah(cacheNasabah[keyword]);
+      return;
+    }
+
+    // batalkan request sebelumnya
+    if(controllerNama){
+      controllerNama.abort();
+    }
+
+    controllerNama = new AbortController();
+
+    try{
+
+      hasilNama.innerHTML = `
+        <div class="item-nasabah">
+          Mencari...
+        </div>
+      `;
+
+      const res = await fetch(
+        `${CONFIG.API_URL}?action=cariNasabah&keyword=${encodeURIComponent(keyword)}`,
+        {
+          signal: controllerNama.signal
+        }
+      );
+
+      const data = await res.json();
+
+      if(!data.ok){
+        hasilNama.innerHTML = "";
+        return;
+      }
+
+      // simpan cache
+      cacheNasabah[keyword] = data.data;
+
+      renderNasabah(data.data);
+
+    }catch(err){
+
+      if(err.name === "AbortError"){
+        return;
+      }
+
+      console.error(err);
+
+      hasilNama.innerHTML = `
+        <div class="item-nasabah">
+          Error saat mencari
+        </div>
+      `;
+
+    }
+
+  }, 300);
+
+});
+
+function renderNasabah(data){
+
+  hasilNama.innerHTML = data.map(item => `
+    <div class="item-nasabah"
+      onclick='pilihNasabah(${JSON.stringify(item)})'>
+      ${item.nama} - ${item.hp}
+    </div>
+  `).join("");
+
+}
+
+//================== cari jenis sampah =================
+const inputJenisSampah = document.getElementById("jenisSampah");
+const hasilJenisSampah = document.getElementById("hasilSampah");
+
+let timeoutSampah;
+let controllerSampah;
+const cacheSampah = {};
+
+inputJenisSampah.addEventListener("input", function () {
+
+  clearTimeout(timeoutSampah);
+
+  timeoutSampah = setTimeout(async () => {
+
+    const keyword = inputJenisSampah.value.trim();
+
+    if(keyword.length < 2){
+      hasilJenisSampah.innerHTML = "";
+      return;
+    }
+
+    // ambil dari cache
+    if(cacheSampah[keyword]){
+      renderSampah(cacheSampah[keyword]);
+      return;
+    }
+
+    // batalkan request sebelumnya
+    if(controllerSampah){
+      controllerSampah.abort();
+    }
+
+    controllerSampah = new AbortController();
+
+    try{
+
+      hasilJenisSampah.innerHTML = `
+        <div class="item-jenis-sampah">
+          Mencari...
+        </div>
+      `;
+
+      const res = await fetch(
+        `${CONFIG.API_URL}?action=cariJenisSampah&keyword=${encodeURIComponent(keyword)}`,
+        {
+          signal: controllerSampah.signal
+        }
+      );
+
+      const data = await res.json();
+
+      if(!data.ok){
+        hasilJenisSampah.innerHTML = "";
+        return;
+      }
+
+      // simpan cache
+      cacheSampah[keyword] = data.data;
+
+      renderSampah(data.data);
+
+    }catch(err){
+
+      if(err.name === "AbortError"){
+        return;
+      }
+
+      console.error(err);
+
+      hasilJenisSampah.innerHTML = `
+        <div class="item-jenis-sampah">
+          Error saat mencari
+        </div>
+      `;
+
+    }
+
+  }, 300);
+
+});
+
+function renderSampah(data){
+
+  hasilJenisSampah.innerHTML = data.map(item => `
+    <div class="item-jenis-sampah"
+      onclick='pilihJenisSampah(${JSON.stringify(item)})'>
+      ${item.jenisSampah}
+    </div>
+  `).join("");
+
+}
+
+// ================= HAPUS PENIMBANGAN =================
+async function hapusPenimbangan(e, id){
+
+  e.stopPropagation();
+  
+  if(!confirm("Hapus penimbangan ini?")) return;
+
+  console.log("Hapus penimbangan dengan id:", id);
+
+  try{
+
+    const body = new URLSearchParams({
+      mode: "hapusPenimbangan",
+      id: id
+    });
+
+    const res = await fetch(CONFIG.API_URL,{
+      method:"POST",
+      body: body
+    });
+
+    const r = await res.json();
+
+    if(!r.ok){
+      alert(r.message);
+      return;
+    }
+
+    alert("Penimbangan berhasil dihapus");
+
+    getListPenimbangan();
+
+  }catch(err){
+
+    console.log(err);
+    alert("Gagal menghapus penimbangan");
+
+  }
+
+}
+
+// ================= PILIH NASABAH =================
+function pilihNasabah(item){
+
+  // isi form
+  document.getElementById("nama").value = item.nama.toUpperCase();
+
+  document.getElementById("nasabahId").value = item.id;
+
+  hasilNama.innerHTML = "";
+  
+}
+
+// ================= PILIH JENIS SAMPAH =================
+function pilihJenisSampah(item){
+
+  // isi form
+  document.getElementById("jenisSampah").value = item.jenisSampah.toUpperCase();
+  document.getElementById("sampahId").value = item.id;
+
+  document.getElementById("hargaNasabah").value = 
+  Number(
+    String(item.hargaNasabah)
+      .replace(/\D/g, "")
+  );
+
+  document.getElementById("hargaJual").value =
+  Number(
+    String(item.hargaJual)
+      .replace(/\D/g, "")
+  );
+  
+  document.getElementById("satuan").value = item.satuan;
+
+  hasilJenisSampah.innerHTML = "";
+          console.log(item);
+
+  
+}
+
+// ================= HITUNG TOTAL JUAL =================
+document.getElementById("beratSampah").addEventListener("input", function(){
+
+  const berat = parseFloat(document.getElementById("beratSampah").value);
+  const hargaJual = Number(
+    document.getElementById("hargaJual").value
+      .replace(/\D/g, "")
+  );
+
+  if(!isNaN(berat) && !isNaN(hargaJual)){
+    document.getElementById("totalJual").value =
+    Math.round(berat * hargaJual);
+  }else{
+    document.getElementById("totalJual").value = "";
+  }
+
+});
+
+// ================= HITUNG TOTAL NASABAH =================
+document.getElementById("beratSampah").addEventListener("input", function(){
+
+  const berat = parseFloat(document.getElementById("beratSampah").value);
+  const hargaNasabah = Number(
+    document.getElementById("hargaNasabah").value
+      .replace(/\D/g, "")
+  );
+
+  if(!isNaN(berat) && !isNaN(hargaNasabah)){
+    document.getElementById("totalNasabah").value =
+    Math.round(berat * hargaNasabah);
+  }else{
+    document.getElementById("totalNasabah").value = "";
+  }
+
+});
+
+
+document.addEventListener("click", function(e){
+
+  // jika klik bukan di input dan bukan di hasil
+  if(
+    !inputJenisSampah.contains(e.target) &&
+    !hasilJenisSampah.contains(e.target)
+  ){
+
+    hasilJenisSampah.innerHTML = "";
+
+  }
+
+});
+
+document.addEventListener("click", function(e){
+
+  // tutup hasil nasabah
+  if(
+    !inputNama.contains(e.target) &&
+    !hasilNama.contains(e.target)
+  ){
+
+    hasilNama.innerHTML = "";
+
+  }
+
+  // tutup hasil jenis sampah
+  if(
+    !inputJenisSampah.contains(e.target) &&
+    !hasilJenisSampah.contains(e.target)
+  ){
+
+    hasilJenisSampah.innerHTML = "";
+
+  }
+
+});
+
+// =================== list penimbangan terakhir ===================
+// ================= LIST TERAKHIR =================
+async function getListPenimbangan(){
+
+  try {
+
+    const res = await fetch(
+      CONFIG.API_URL + "?action=getListPenimbangan"
+    );
+
+    const r = await res.json();
+
+    console.log(r);
+
+    if(!r.ok){
+      listTerakhir.innerText = "Gagal memuat";
+      return;
+    }
+
+    listTerakhir.innerHTML = r.data.map(n => `
+      <div class="list-item" style="padding:10px; border-bottom:1px solid #eee">
+        <b>${n.nama}</b><br>
+        Jenis Sampah: <b>${n.jenisSampah}</b><br>
+        Berat Sampah: ${n.beratSampah} ${n.satuan}<br>
+        Tanggal: ${n.tgl}<br>
+        <button class="btnHapusPenimbangan" onclick="hapusPenimbangan(event, '${n.id}')">Hapus</button>
+      </div>
+    `).join("");
+
+  } catch(err){
+
+    console.log(err);
+
+  }
+
+}
+
+
+
+window.addEventListener("DOMContentLoaded", () => {
+  getListPenimbangan();
+
+  setInterval(getListPenimbangan, 5000);
+});
+
+</script>
+<script src=""></script> 
+
+</body>
+</html>

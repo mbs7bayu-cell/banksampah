@@ -1,0 +1,1230 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<link rel="manifest" href="/manifest.json">
+<meta name="theme-color" content="#3B82C4" id="themeColor">
+<title>Laporan</title>
+<script src="auth.js"></script>
+<style>
+body{font-family:sans-serif;background:#f5f5f5;padding:16px}
+.card{background:white;padding:16px;border-radius:12px; margin-bottom: 20px;}
+
+input,textarea{
+  width:100%;
+  padding:10px;
+  margin:8px 0;
+  border-radius:8px;
+  border:1px solid #ccc;
+  box-sizing:border-box;
+}
+
+button{
+  width:100%;
+  padding:12px;
+  background:#4E6E58;
+  color:white;
+  border:none;
+  border-radius:8px;
+  cursor:pointer;
+  transition:0.2s;
+  margin-bottom: 10px;
+}
+
+button:hover{
+  background:#333333;
+  transform:translateY(-2px);
+}
+
+button:active{
+  transform:translateY(0);
+}
+
+button:disabled{
+  background:#999;
+  cursor:not-allowed;
+}
+
+.btnDataNasabah{
+  background:#4E6E58;
+}
+
+.btnDataNasabah:hover{
+  background:#555555;
+}
+
+.card h2 {
+  color: #4E6E58;
+}
+
+.list-item {
+  cursor: pointer;
+  border-radius: 8px;
+}
+
+.list-item:hover {
+  background-color: #999;
+  color: white;
+}
+
+.btnHapusPenimbangan {
+  background: #ff4d4d;
+  color: white;
+  border: none;
+  padding: 6px 12px;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: 0.2s;
+  width: auto;
+  margin-top: 8px;
+}
+
+img{width:50%;margin-top:10px;border-radius:8px;justify-content:center;display:block;margin-left:auto;margin-right:auto}
+
+.loader {
+  border: 3px solid #eee;
+  border-top: 3px solid #2d89ef;
+  border-radius: 50%;
+  width: 20px;
+  height: 20px;
+  animation: spin 1s linear infinite;
+}
+
+.btnPrint {
+  background-color: #666666;
+}
+
+.btnPrintKhusus {
+  background-color: #666666;
+}
+
+@keyframes spin {
+  0% { transform: rotate(0deg);}
+  100% { transform: rotate(360deg);}
+}
+
+@media (min-width: 600px) {
+  button {
+    width: 100%;
+    margin: 10px auto;
+    display: block;
+  }
+
+  .card {
+    max-width: 400px;
+    margin: 20px auto;
+  }
+
+  .btnCopy {
+    width: auto;
+    margin: 10px;
+  }
+
+  .btnHapusNasabah {
+    width: auto;
+    margin: 0px;
+  }
+  
+
+ 
+}
+</style>
+</head>
+
+<body>
+
+<div class="card">
+
+<h2>Laporan</h2>
+
+  <div id="listTerakhir">
+    <p>Memuat...</p>
+  </div>
+
+
+</div>
+
+<div class="card">
+  <button id="btnDashboard">Kembali</button>
+</div>
+
+<footer id="footer" style="text-align:center; margin-top:40px; color:#777; font-size:14px;">
+  © 2026 Banksampahdigital by mbayusubagja
+</footer>
+
+<script src="config.js"></script>
+
+<script>
+
+// ================= SIMPAN DATA =================
+const btnDashboard =
+  document.getElementById("btnDashboard");
+
+const listTerakhir =
+  document.getElementById("listTerakhir");
+
+btnDashboard.addEventListener("click", () => {
+
+  window.location.href =
+    "keuangan.html";
+
+});
+
+// ================= GLOBAL =================
+let jumlahTanggalTampil = 3;
+
+let dataPenimbangan = [];
+let dataSortir = [];
+let dataPengeluaran = [];
+
+
+
+// ================= TOAST =================
+function showToast(msg) {
+
+  const div =
+    document.createElement("div");
+
+  div.innerText = msg;
+
+  div.style.position = "fixed";
+  div.style.bottom = "20px";
+  div.style.left = "50%";
+  div.style.transform =
+    "translateX(-50%)";
+
+  div.style.background = "#333";
+  div.style.color = "#fff";
+  div.style.padding = "10px 20px";
+  div.style.borderRadius = "8px";
+  div.style.zIndex = "9999";
+
+  document.body.appendChild(div);
+
+  setTimeout(() => {
+
+    div.remove();
+
+  }, 2000);
+
+}
+
+
+
+
+
+// =========================================================
+// RENDER
+// =========================================================
+
+function renderPenimbanganGabungan(){
+
+  // ================= TANGGAL =================
+  const tanggalPemasukan =
+    dataPenimbangan.map(n => n.tgl);
+
+  const tanggalSortir =
+    dataSortir.map(n => n.tgl);
+
+  const tanggalPengeluaran =
+    dataPengeluaran.map(n => n.tgl);
+
+
+
+  const tanggalUnik = [
+
+    ...new Set([
+
+      ...tanggalPemasukan,
+      ...tanggalSortir,
+      ...tanggalPengeluaran
+
+    ])
+
+  ]
+
+  .sort((a, b) =>
+    new Date(b) - new Date(a)
+  );
+
+
+
+
+
+  // =========================================================
+  // GRAND TOTAL
+  // =========================================================
+
+  const grandTotalNasabah =
+    dataPenimbangan.reduce((sum, item) => {
+
+      return sum +
+        Number(item.totalNasabah || 0);
+
+    }, 0);
+
+
+
+
+  const grandTotalJual =
+    dataSortir.reduce((sum, item) => {
+
+      return sum +
+        Number(item.totalJual || 0);
+
+    }, 0);
+
+
+
+
+  const grandTotalPemasukan =
+    grandTotalJual -
+    grandTotalNasabah;
+
+
+
+
+  const grandTotalBerat =
+    dataPenimbangan.reduce((sum, item) => {
+
+      return sum +
+        Number(item.beratSampah || 0);
+
+    }, 0);
+
+
+
+
+  const grandTotalPengeluaran =
+    dataPengeluaran.reduce((sum, item) => {
+
+      return sum +
+        Number(item.nominalPengeluaran || 0);
+
+    }, 0);
+
+
+
+
+
+  // =========================================================
+  // SALDO BERJALAN
+  // =========================================================
+
+  let saldoBerjalan = 0;
+
+  const tanggalAsc = [...tanggalUnik]
+    .sort((a, b) =>
+
+      new Date(a) - new Date(b)
+
+    );
+
+  const saldoPerTanggal = {};
+
+
+
+
+
+  // =========================================================
+  // HITUNG SALDO
+  // =========================================================
+
+  tanggalAsc.forEach(tgl => {
+
+    // ================= NASABAH =================
+    const pemasukanTanggal =
+      dataPenimbangan.filter(n =>
+
+        n.tgl === tgl
+
+      );
+
+
+
+    const totalNasabahTanggal =
+      pemasukanTanggal.reduce((sum, item) => {
+
+        return sum +
+          Number(item.totalNasabah || 0);
+
+      }, 0);
+
+
+
+
+    // ================= SORTIR =================
+    const sortirTanggal =
+      dataSortir.filter(n =>
+
+        n.tgl === tgl
+
+      );
+
+
+
+    const totalJualTanggal =
+      sortirTanggal.reduce((sum, item) => {
+
+        return sum +
+          Number(item.totalJual || 0);
+
+      }, 0);
+
+
+
+
+    // ================= PEMASUKAN =================
+    const totalPemasukanTanggal =
+      totalJualTanggal -
+      totalNasabahTanggal;
+
+
+
+
+    // ================= PENGELUARAN =================
+    const pengeluaranTanggal =
+      dataPengeluaran.filter(n =>
+
+        n.tgl === tgl
+
+      );
+
+
+
+    const totalPengeluaranTanggal =
+      pengeluaranTanggal.reduce((sum, item) => {
+
+        return sum +
+          Number(item.nominalPengeluaran || 0);
+
+      }, 0);
+
+
+
+
+    // ================= SALDO =================
+    saldoBerjalan +=
+
+      totalPemasukanTanggal -
+      totalPengeluaranTanggal;
+
+    saldoPerTanggal[tgl] =
+      saldoBerjalan;
+
+  });
+
+
+
+
+
+  // =========================================================
+  // RENDER HTML
+  // =========================================================
+
+  listTerakhir.innerHTML =
+
+    tanggalUnik
+
+      .slice(0, jumlahTanggalTampil)
+
+      .map(tgl => {
+
+
+
+
+        // ================= PENIMBANGAN =================
+        const detailTanggal =
+
+          dataPenimbangan
+
+            .filter(n =>
+
+              n.tgl === tgl
+
+            )
+
+            .sort((a, b) =>
+
+              (a.nama || "")
+                .toUpperCase()
+
+                .localeCompare(
+
+                  (b.nama || "")
+                    .toUpperCase()
+
+                )
+
+            );
+
+
+
+
+        // ================= SORTIR =================
+        const sortirTanggal =
+
+          dataSortir.filter(item => {
+
+            return item.tgl === tgl;
+
+          });
+
+
+
+
+        // ================= PENGELUARAN =================
+        const pengeluaranTanggal =
+
+          dataPengeluaran.filter(item => {
+
+            return item.tgl === tgl;
+
+          });
+
+
+
+
+        // ================= TOTAL =================
+        const totalBerat =
+          detailTanggal.reduce((sum, item) => {
+
+            return sum +
+              Number(item.beratSampah || 0);
+
+          }, 0);
+
+
+
+
+        const totalNasabah =
+          detailTanggal.reduce((sum, item) => {
+
+            return sum +
+              Number(item.totalNasabah || 0);
+
+          }, 0);
+
+
+
+
+        const totalJual =
+          sortirTanggal.reduce((sum, item) => {
+
+            return sum +
+              Number(item.totalJual || 0);
+
+          }, 0);
+
+
+
+
+        const totalPemasukan =
+          totalJual - totalNasabah;
+
+
+
+
+        const totalPengeluaran =
+          pengeluaranTanggal.reduce((sum, item) => {
+
+            return sum +
+              Number(item.nominalPengeluaran || 0);
+
+          }, 0);
+
+
+
+
+        const saldoTanggal =
+          saldoPerTanggal[tgl] || 0;
+
+
+
+
+        const satuan =
+          detailTanggal[0]?.satuan || "Kg";
+
+
+
+
+
+        // =====================================================
+        // GROUPING NAMA
+        // =====================================================
+
+        const grupNama = {};
+
+        detailTanggal.forEach(item => {
+
+          const nama =
+            item.nama || "Tanpa Nama";
+
+          if(!grupNama[nama]){
+
+            grupNama[nama] = [];
+
+          }
+
+          grupNama[nama].push(item);
+
+        });
+
+
+
+
+
+        // =====================================================
+        // HTML NAMA
+        // =====================================================
+
+        const htmlNama =
+
+          Object.keys(grupNama)
+
+            .sort((a, b) =>
+              a.localeCompare(b)
+            )
+
+            .map(nama => {
+
+              const items =
+                grupNama[nama];
+
+
+
+              const totalBeratOrang =
+                items.reduce((sum, item) => {
+
+                  return sum +
+                    Number(item.beratSampah || 0);
+
+                }, 0);
+
+
+
+
+              const totalNasabahOrang =
+                items.reduce((sum, item) => {
+
+                  return sum +
+                    Number(item.totalNasabah || 0);
+
+                }, 0);
+
+
+
+
+              return `
+
+                <div style="
+                  padding:10px;
+                  margin-bottom:12px;
+                  border:1px solid #ddd;
+                  border-radius:10px;
+                ">
+
+                  <div style="
+                    background:#000;
+                    color:#fff;
+                    padding:8px;
+                    margin-bottom:8px;
+                  ">
+
+                    <b>${nama}</b><br>
+
+                    <small>
+                      Total Berat:
+                      ${totalBeratOrang}
+                      ${items[0]?.satuan || ""}
+                    </small><br>
+
+                    <small>
+                      Total Nasabah:
+                      Rp ${new Intl.NumberFormat("id-ID")
+                        .format(totalNasabahOrang)}
+                    </small>
+
+                  </div>
+
+
+
+
+                  ${items.map(item => `
+
+                    <div style="
+                      padding:8px 0;
+                      border-bottom:1px solid #eee;
+                    ">
+
+                      Jenis Sampah:
+                      <b>${item.jenisSampah}</b><br>
+
+                      Berat:
+                      <b>
+                        ${item.beratSampah}
+                        ${item.satuan}
+                      </b><br>
+
+                      Total Nasabah:
+                      <b>
+                        Rp ${new Intl.NumberFormat("id-ID")
+                          .format(item.totalNasabah)}
+                      </b>
+
+                    </div>
+
+                  `).join("")}
+
+                </div>
+
+              `;
+
+            }).join("");
+
+
+
+
+
+        // =====================================================
+        // HTML SORTIR
+        // =====================================================
+
+        const htmlSortir =
+
+          sortirTanggal.map(item => `
+
+            <div style="
+              padding:10px;
+              margin-bottom:10px;
+              border:1px solid #ddd;
+              border-radius:10px;
+            ">
+
+              Jenis:
+              <b>${item.jenisSampah}</b><br>
+
+              Berat:
+              <b>
+                ${item.beratSampah}
+                ${item.satuan}
+              </b><br>
+
+              Total Jual:
+              <b>
+                Rp ${new Intl.NumberFormat("id-ID")
+                  .format(item.totalJual)}
+              </b>
+
+            </div>
+
+          `).join("");
+
+
+
+
+
+        // =====================================================
+        // HTML PENGELUARAN
+        // =====================================================
+
+        const htmlPengeluaran =
+
+          pengeluaranTanggal.map(item => `
+
+            <div style="
+              padding:10px;
+              margin-bottom:10px;
+              border:1px solid #ddd;
+              border-radius:10px;
+            ">
+
+              Nama:
+              <b>${item.namaPengeluaran}</b><br>
+
+              Nominal:
+              <b>
+                Rp ${new Intl.NumberFormat("id-ID")
+                  .format(item.nominalPengeluaran)}
+              </b>
+
+            </div>
+
+          `).join("");
+
+
+
+
+
+        // =====================================================
+        // RETURN HTML
+        // =====================================================
+
+        return `
+
+          <div style="
+            border:1px solid #ddd;
+            border-radius:10px;
+            margin-bottom:10px;
+            overflow:hidden;
+            background:#fff;
+          ">
+
+            <div
+              class="tanggal-header"
+              data-tgl="${tgl}"
+
+              style="
+                padding:12px;
+                background:#f5f5f5;
+                cursor:pointer;
+              "
+            >
+
+              <b>${tgl}</b><br>
+
+              <small>
+                Total Berat:
+                ${totalBerat}
+                ${satuan}
+              </small><br>
+
+              <small>
+                Pemasukan Bersih:
+                Rp ${new Intl.NumberFormat("id-ID")
+                  .format(totalPemasukan)}
+              </small><br>
+
+              <small>
+                Pengeluaran:
+                Rp ${new Intl.NumberFormat("id-ID")
+                  .format(totalPengeluaran)}
+              </small><br>
+
+              <small>
+                Saldo:
+                Rp ${new Intl.NumberFormat("id-ID")
+                  .format(saldoTanggal)}
+              </small>
+
+            </div>
+
+
+
+
+
+            <div
+              class="detail-box"
+              id="detail-${tgl}"
+
+              style="
+                display:none;
+                padding:10px;
+              "
+            >
+
+              <h3>Data Penimbangan</h3>
+
+              ${htmlNama}
+
+
+
+              <hr>
+
+              <h3>Data Sortir</h3>
+
+              ${htmlSortir}
+
+
+
+              <hr>
+
+              <h3>Data Pengeluaran</h3>
+
+              ${htmlPengeluaran}
+
+
+
+
+              <p>
+                <b>
+                  Total Nasabah:
+                  Rp ${new Intl.NumberFormat("id-ID")
+                    .format(totalNasabah)}
+                </b>
+              </p>
+
+              <p>
+                <b>
+                  Total Jual:
+                  Rp ${new Intl.NumberFormat("id-ID")
+                    .format(totalJual)}
+                </b>
+              </p>
+
+              <p>
+                <b>
+                  Pemasukan Bersih:
+                  Rp ${new Intl.NumberFormat("id-ID")
+                    .format(totalPemasukan)}
+                </b>
+              </p>
+
+              <p>
+                <b>
+                  Pengeluaran:
+                  Rp ${new Intl.NumberFormat("id-ID")
+                    .format(totalPengeluaran)}
+                </b>
+              </p>
+
+              <p>
+                <b>
+                  Saldo:
+                  Rp ${new Intl.NumberFormat("id-ID")
+                    .format(saldoTanggal)}
+                </b>
+              </p>
+
+              <button
+                class="btnPrint"
+                data-tgl="${tgl}"
+              >
+                🖨️ Print Laporan Khusus
+              </button>
+
+            </div>
+
+          </div>
+
+        `;
+
+      }).join("");
+
+
+
+
+
+  // =========================================================
+  // LOAD MORE / LESS
+  // =========================================================
+
+  listTerakhir.innerHTML += `
+
+    <div style="
+      display:flex;
+      gap:10px;
+      margin-top:16px;
+    ">
+
+      ${
+        jumlahTanggalTampil <
+        tanggalUnik.length
+
+        ? `
+          <button
+            id="btnLoadMore"
+            style="
+              background-color:#666666;
+            "
+          >
+            Load More
+          </button>
+        `
+        : ""
+      }
+
+      ${
+        jumlahTanggalTampil > 3
+
+        ? `
+          <button
+            id="btnLoadLess"
+            style="
+              background-color:#666666;
+            "
+          >
+            Load Less
+          </button>
+        `
+        : ""
+      }
+
+    </div>
+
+  `;
+
+
+
+
+
+  // =========================================================
+  // GRAND TOTAL
+  // =========================================================
+
+  const grandSaldo =
+
+    grandTotalPemasukan -
+    grandTotalPengeluaran;
+
+  listTerakhir.innerHTML += `
+
+    <div style="
+      padding:12px;
+      background:#2d89ef;
+      color:white;
+      border-radius:8px;
+    ">
+
+      <b>
+        Grand Total Nasabah:
+        Rp ${new Intl.NumberFormat("id-ID")
+          .format(grandTotalNasabah)}
+      </b><br>
+
+      <b>
+        Grand Total Jual:
+        Rp ${new Intl.NumberFormat("id-ID")
+          .format(grandTotalJual)}
+      </b><br>
+
+      <b>
+        Grand Total Pemasukan:
+        Rp ${new Intl.NumberFormat("id-ID")
+          .format(grandTotalPemasukan)}
+      </b><br>
+
+      <b>
+        Grand Total Berat:
+        ${grandTotalBerat} Kg
+      </b><br>
+
+      <b>
+        Grand Total Pengeluaran:
+        Rp ${new Intl.NumberFormat("id-ID")
+          .format(grandTotalPengeluaran)}
+      </b><br>
+
+      <b>
+        Saldo Saat Ini:
+        Rp ${new Intl.NumberFormat("id-ID")
+          .format(grandSaldo)}
+      </b>
+
+    </div>
+
+  `;
+
+
+
+
+
+  // =========================================================
+  // DROPDOWN
+  // =========================================================
+
+  document.querySelectorAll(".tanggal-header")
+
+    .forEach(header => {
+
+      header.addEventListener("click", () => {
+
+        const tgl =
+          header.dataset.tgl;
+
+        const detail =
+          document.getElementById(
+            `detail-${tgl}`
+          );
+
+        if(detail.style.display === "none"){
+
+          detail.style.display = "block";
+
+        } else {
+
+          detail.style.display = "none";
+
+        }
+
+      });
+
+    });
+
+
+
+
+
+  // =========================================================
+  // LOAD MORE
+  // =========================================================
+
+  const btnLoadMore =
+    document.getElementById(
+      "btnLoadMore"
+    );
+
+  if(btnLoadMore){
+
+    btnLoadMore.addEventListener("click", () => {
+
+      jumlahTanggalTampil += 3;
+
+      renderPenimbanganGabungan();
+
+    });
+
+  }
+
+
+
+
+
+  // =========================================================
+  // LOAD LESS
+  // =========================================================
+
+  const btnLoadLess =
+    document.getElementById(
+      "btnLoadLess"
+    );
+
+  if(btnLoadLess){
+
+    btnLoadLess.addEventListener("click", () => {
+
+      jumlahTanggalTampil -= 3;
+
+      if(jumlahTanggalTampil < 3){
+
+        jumlahTanggalTampil = 3;
+
+      }
+
+      renderPenimbanganGabungan();
+
+    });
+
+  }
+
+}
+
+
+
+
+
+// =========================================================
+// GET DATA
+// =========================================================
+
+async function getPenimbangan(){
+
+  try {
+
+    const [
+
+      resPenimbangan,
+      resSortir,
+      resPengeluaran
+
+    ] = await Promise.all([
+
+      fetch(
+        CONFIG.API_URL +
+        "?action=getPenimbangan"
+      ),
+
+      fetch(
+        CONFIG.API_URL +
+        "?action=getSortir"
+      ),
+
+      fetch(
+        CONFIG.API_URL +
+        "?action=getPengeluaran"
+      )
+
+    ]);
+
+
+
+
+    const r =
+      await resPenimbangan.json();
+
+    const rSortir =
+      await resSortir.json();
+
+    const rPengeluaran =
+      await resPengeluaran.json();
+
+
+
+
+    if(!r.ok){
+
+      listTerakhir.innerText =
+        "Gagal memuat";
+
+      return;
+
+    }
+
+
+
+
+    dataPenimbangan =
+      r.data || [];
+
+    dataSortir =
+      rSortir.data || [];
+
+    dataPengeluaran =
+      rPengeluaran.data || [];
+
+
+
+
+    window.dataPenimbangan =
+      r.data || [];
+
+    window.dataSortir =
+      rSortir.data || [];
+
+    window.dataPengeluaran =
+      rPengeluaran.data || [];
+
+
+
+
+    renderPenimbanganGabungan();
+
+  } catch(err){
+
+    console.log(err);
+
+  }
+
+}
+
+
+
+
+
+// =========================================================
+// LOAD
+// =========================================================
+
+window.addEventListener("DOMContentLoaded", () => {
+
+  getPenimbangan();
+
+});
+
+
+
+</script>
+<script src="printlaporan.js"></script> 
+
+</body>
+</html>

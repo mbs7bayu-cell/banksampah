@@ -1,0 +1,307 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<link rel="manifest" href="/manifest.json">
+<meta name="theme-color" content="#3B82C4" id="themeColor">
+<title>Profil Bank Sampah</title>
+<script src="auth.js"></script>
+<style>
+body{font-family:sans-serif;background:#f5f5f5;padding:16px}
+.card{background:white;padding:16px;border-radius:12px; margin-bottom: 20px;}
+
+input,textarea{
+  width:100%;
+  padding:10px;
+  margin:8px 0;
+  border-radius:8px;
+  border:1px solid #ccc;
+  box-sizing:border-box;
+}
+
+.card h2 {
+  color: #4E6E58;
+}
+
+button{
+  width:100%;
+  padding:12px;
+  background:#4E6E58;
+  color:white;
+  border:none;
+  border-radius:8px;
+  cursor:pointer;
+  transition:0.2s;
+  margin-bottom: 10px;
+}
+
+button:hover{
+  background:#333333;
+  transform:translateY(-2px);
+}
+
+button:active{
+  transform:translateY(0);
+}
+
+button:disabled{
+  background:#999;
+  cursor:not-allowed;
+}
+
+.btnDataNasabah{
+  background:#4E6E58;
+}
+
+.btnDataNasabah:hover{
+  background:#333333;
+}
+
+.list-item {
+  padding: 10px;
+  border-bottom: 1px solid #eee;
+}
+
+.btnHapusNasabah {
+  background: #ff4d4d;
+  color: white;
+  padding: 5px 10px;
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: 0.2s;
+  margin-top: 8px;
+  width: auto;
+}
+
+img{width:50%;margin-top:10px;border-radius:8px;justify-content:center;display:block;margin-left:auto;margin-right:auto}
+
+.loader {
+  border: 3px solid #eee;
+  border-top: 3px solid #2d89ef;
+  border-radius: 50%;
+  width: 20px;
+  height: 20px;
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  0% { transform: rotate(0deg);}
+  100% { transform: rotate(360deg);}
+}
+
+@media (min-width: 600px) {
+  button {
+    width: 100%;
+    margin: 10px auto;
+    display: block;
+  }
+
+  .card {
+    max-width: 400px;
+    margin: 20px auto;
+  }
+
+  .btnCopy {
+    width: auto;
+    margin: 10px;
+  }
+
+  .btnHapusNasabah {
+    width: auto;
+    margin-top: 10px;
+    margin-left: 0px;
+  }
+  
+
+
+}
+</style>
+</head>
+
+<body>
+
+<div class="card">
+<h2>Profil Bank Sampah</h2>
+
+<div class="listProduk">
+    <input id="nama" placeholder="Nama Bank Sampah" required>
+    <input id="namaKelurahan" placeholder="Nama Kelurahan" required>
+    <input id="namaKecamatan" placeholder="Nama Kecamatan" required>
+    <input id="namaKetua" placeholder="Nama Ketua" required>
+</div>
+<p id="status"></p>
+<div id="loading" class="loader" style="display:none;"></div>
+<button id="btnSimpan" type="submit">Simpan</button>
+</div>
+
+<div class="card">
+  <p style="margin:0; padding:0; color:#777; font-size:12px;">Profil Bank Sampah:</p>
+  <div id="listTerakhir">
+    <p>Memuat...</p>
+  </div>
+</div>
+
+<div class="card">
+  <button id="btnDashboard">📊 MENU</button>
+</div>
+
+
+
+<footer id="footer" style="text-align:center; margin-top:40px; color:#777; font-size:14px;">
+  © 2026 Banksampahdigital by mbayusubagja
+</footer>
+
+<script src="config.js"></script>
+
+<script>
+// ================= SIMPAN DATA =================
+const btnSimpan = document.getElementById("btnSimpan");
+const status = document.getElementById("status");
+const btnDashboard = document.getElementById("btnDashboard");
+const listTerakhir = document.getElementById("listTerakhir");
+
+btnDashboard.addEventListener("click", () => {
+  window.location.href = "menu.html";
+});
+
+btnSimpan.addEventListener("click", async function () {
+
+  const nama = document.getElementById("nama").value.toUpperCase();
+  const namaKel = document.getElementById("namaKelurahan").value.toUpperCase();
+  const namaKec = document.getElementById("namaKecamatan").value.toUpperCase();
+  const namaKetua = document.getElementById("namaKetua").value.toUpperCase();
+
+  const error = validasi();
+  if(error){
+    showToast(error);
+    return;
+  }
+
+  btnSimpan.disabled = true;
+  btnSimpan.innerText = "Menyimpan...";
+  status.innerText = "Proses...";
+
+  const data = {
+  mode: "simpanProfil",
+  nama: nama,
+  namaKel: namaKel,
+  namaKec: namaKec,
+  namaKetua: namaKetua
+};
+
+  try {
+
+    const res = await fetch(CONFIG.API_URL, {
+      method: "POST",
+      body: JSON.stringify(data)
+    });
+
+    const r = await res.json();
+
+    btnSimpan.disabled = false;
+    btnSimpan.innerText = "Simpan";
+
+    if (!r.ok) {
+      status.innerText = r.message || "❌ Gagal menyimpan";
+      return;
+    }
+
+    status.innerHTML =
+      "✅ " + "Profil bank sampah " + "<b>" + nama + "</b>" + " berhasil tersimpan.";
+    resetForm();
+    getProfil();
+
+
+  } catch (err) {
+    console.log(err);
+    btnSimpan.disabled = false;
+    btnSimpan.innerText = "Simpan";
+    status.innerText = "❌ Gagal menyimpan";
+  }
+
+});
+
+// ================= VALIDASI =================
+function validasi() {
+  if (!document.getElementById("nama").value) return "Nama wajib diisi";
+  return null;
+}
+
+// ================= TOAST =================
+function showToast(msg) {
+  const div = document.createElement("div");
+  div.innerText = msg;
+
+  div.style.position = "fixed";
+  div.style.bottom = "20px";
+  div.style.left = "50%";
+  div.style.transform = "translateX(-50%)";
+  div.style.background = "#333";
+  div.style.color = "#fff";
+  div.style.padding = "10px 20px";
+  div.style.borderRadius = "8px";
+  div.style.zIndex = "9999";
+
+  document.body.appendChild(div);
+
+  setTimeout(() => {
+    div.remove();
+  }, 2000);
+}
+
+// ================= RESET FORM =================
+function resetForm(){
+
+  document.getElementById("nama").value = "";
+  document.getElementById("namaKelurahan").value = "";
+  document.getElementById("namaKecamatan").value = "";
+    document.getElementById("namaKetua").value = "";
+
+
+}
+
+// ================= LIST TERAKHIR =================
+async function getProfil(){
+
+  try {
+
+    const res = await fetch(
+      CONFIG.API_URL + "?action=getProfil"
+    );
+
+    const r = await res.json();
+
+    console.log(r);
+
+    if(!r.ok){
+      listTerakhir.innerText = "Gagal memuat";
+      return;
+    }
+
+    listTerakhir.innerHTML = r.data.map(n => `
+      <div class="list-item">
+        <b>${n.nama}</b><br>
+        Nama Kelurahan: ${n.namaKel}<br>
+        Nama Kecamatan: ${n.namaKec}<br>
+        Nama Ketua: ${n.namaKetua}<br>
+      </div>
+    `).join("");
+
+  } catch(err){
+
+    console.log(err);
+
+  }
+
+}
+
+window.addEventListener("DOMContentLoaded", () => {
+  getProfil();
+});
+
+</script>
+<script src=""></script> 
+
+</body>
+</html>

@@ -1,0 +1,976 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<link rel="manifest" href="/manifest.json">
+<meta name="theme-color" content="#3B82C4" id="themeColor">
+<title>Data Nasabah</title>
+<script src="auth.js"></script>
+<style>
+body{font-family:sans-serif;background:#f5f5f5;padding:16px}
+.card{background:white;padding:16px;border-radius:12px; margin-bottom: 20px;}
+
+input,textarea{
+  width:100%;
+  padding:10px;
+  margin:8px 0;
+  border-radius:8px;
+  border:1px solid #ccc;
+  box-sizing:border-box;
+}
+
+button{
+  width:100%;
+  padding:12px;
+  background:#4E6E58;
+  color:white;
+  border:none;
+  border-radius:8px;
+  cursor:pointer;
+  transition:0.2s;
+  margin-bottom: 10px;
+}
+
+button:hover{
+  background:#333333;
+  transform:translateY(-2px);
+}
+
+button:active{
+  transform:translateY(0);
+}
+
+button:disabled{
+  background:#999;
+  cursor:not-allowed;
+}
+
+.btnDataNasabah{
+  background:#4E6E58;
+}
+
+.card h2 {
+  color: #4E6E58;
+}
+
+.btnDataNasabah:hover{
+  background:#555555;
+}
+
+img{width:50%;margin-top:10px;border-radius:8px;justify-content:center;display:block;margin-left:auto;margin-right:auto}
+
+.loader {
+  border: 3px solid #eee;
+  border-top: 3px solid #2d89ef;
+  border-radius: 50%;
+  width: 20px;
+  height: 20px;
+  animation: spin 1s linear infinite;
+}
+
+.list-item {
+  cursor: pointer;
+  border-radius: 8px;
+}
+
+.list-item:hover {
+  background-color: #999;
+  color: white;
+}
+
+.btnPrint {
+  background-color: #666666;
+}
+
+.btnPrintKhusus {
+  background-color: #666666;
+}
+
+@keyframes spin {
+  0% { transform: rotate(0deg);}
+  100% { transform: rotate(360deg);}
+}
+
+@media (min-width: 600px) {
+  button {
+    width: 100%;
+    margin: 10px auto;
+    display: block;
+  }
+
+  .card {
+    max-width: 400px;
+    margin: 20px auto;
+  }
+
+  .btnCopy {
+    width: auto;
+    margin: 10px;
+  }
+
+  .btnHapusNasabah {
+    width: auto;
+    margin: 0px;
+  }
+
+
+  
+}
+</style>
+</head>
+
+<body>
+
+<div class="card">
+
+<h2>Tabungan Nasabah</h2>
+
+  <div id="listTerakhir">
+    <p>Memuat...</p>
+  </div>
+
+
+</div>
+
+<div class="card">
+  <button id="btnDashboard">Kembali</button>
+</div>
+
+<footer id="footer" style="text-align:center; margin-top:40px; color:#777; font-size:14px;">
+  © 2026 Banksampahdigital by mbayusubagja
+</footer>
+
+<script src="config.js"></script>
+
+<script>
+const params = new URLSearchParams(window.location.search);
+
+const idNasabah = params.get("id");
+
+const btnDashboard = document.getElementById("btnDashboard");
+
+const listTerakhir = document.getElementById("listTerakhir");
+
+btnDashboard.addEventListener("click", function(){
+  window.location.href = "listnasabah.html";
+});
+
+
+let jumlahTanggalTampil = 3;
+let dataDetailNasabah = [];
+let dataPenarikanGlobal = [];
+
+//render
+
+function renderDetailNasabah(){
+
+  const dataNasabah = dataDetailNasabah;
+
+  const dataPenarikan =
+    dataPenarikanGlobal;
+
+  // semua kode render dipindah ke sini
+  const namaNasabah = dataNasabah[0].nama || "Nama tidak tersedia";
+
+    // ================= TANGGAL DARI PEMASUKAN =================
+const tanggalPemasukan =
+  dataNasabah.map(n => n.tgl);
+
+
+
+
+// ================= TANGGAL DARI PENGELUARAN =================
+const tanggalPenarikan =
+  dataPenarikan.map(n => n.tgl);
+
+
+
+
+// ================= GABUNG SEMUA TANGGAL =================
+const tanggalUnik = [
+
+  ...new Set([
+
+    ...tanggalPemasukan,
+    ...tanggalPenarikan
+
+  ])
+
+  ]
+
+  // urut terbaru
+  .sort((a, b) => new Date(b) - new Date(a));
+
+
+
+
+// ================= GRAND TOTAL PEMASUKAN =================
+const grandTotalPemasukan = dataNasabah.reduce((sum, item) => {
+
+  return sum +
+    Number(item.totalNasabah || 0);
+
+}, 0);
+
+
+
+
+// ================= GRAND TOTAL BERAT =================
+const grandTotalBerat = dataNasabah.reduce((sum, item) => {
+
+  return sum +
+    Number(item.beratSampah || 0);
+
+}, 0);
+
+// ================= GRAND TOTAL penarikan =================
+const grandTotalPenarikan = dataPenarikan.reduce((sum, item) => {
+
+  return sum +
+    Number(item.nominalPenarikan || 0);
+
+}, 0);
+
+
+// =========================================================
+// SALDO BERJALAN
+// =========================================================
+
+// karena tanggal diurutkan terbaru,
+// saldo berjalan harus dihitung dari tanggal paling lama
+
+let saldoBerjalan = 0;
+
+
+// urutkan tanggal lama -> baru
+const tanggalAsc = [...tanggalUnik].sort(
+  (a, b) => new Date(a) - new Date(b)
+);
+
+
+// simpan saldo per tanggal
+const saldoPerTanggal = {};
+
+
+
+
+// =========================================================
+// HITUNG SALDO BERJALAN
+// =========================================================
+
+tanggalAsc.forEach(tgl => {
+
+  // ===========================================
+  // PEMASUKAN TANGGAL
+  // ===========================================
+
+  const pemasukanTanggal = dataNasabah
+    .filter(n => n.tgl === tgl);
+
+  const totalPemasukanTanggal =
+    pemasukanTanggal.reduce((sum, item) => {
+
+      return sum +
+        Number(item.totalNasabah || 0);
+
+    }, 0);
+
+
+
+
+  // ===========================================
+  // PENGELUARAN TANGGAL
+  // ===========================================
+
+  const penarikanTanggal =
+    dataPenarikan.filter(item => {
+
+      return item.tgl === tgl;
+
+    });
+
+  const totalPenarikanTanggal =
+    penarikanTanggal.reduce((sum, item) => {
+
+      return sum +
+        Number(item.nominalPenarikan || 0);
+
+    }, 0);
+
+
+
+
+  // ===========================================
+  // SALDO BERJALAN
+  // ===========================================
+
+  saldoBerjalan +=
+    totalPemasukanTanggal -
+    totalPenarikanTanggal;
+
+
+
+
+  // simpan saldo tanggal ini
+  saldoPerTanggal[tgl] = saldoBerjalan;
+
+});
+
+
+
+
+// =========================================================
+// TAMPILKAN DATA per tanggal
+// =========================================================
+listTerakhir.innerHTML = `
+
+<div>
+  
+<h3>${namaNasabah}</h3>
+
+</div
+
+`;
+
+listTerakhir.innerHTML += tanggalUnik
+  .slice(0, jumlahTanggalTampil)
+  .map(tgl => {
+
+
+
+
+  // =====================================================
+  // FILTER DATA SESUAI TANGGAL
+  // =====================================================
+
+  const detailTanggal =
+
+    dataNasabah
+
+      // ambil data sesuai tanggal
+      .filter(n => n.tgl === tgl)
+
+      // urut nama A-Z
+      .sort((a, b) =>
+
+        (a.nama || "")
+          .toUpperCase()
+
+          .localeCompare(
+
+            (b.nama || "")
+              .toUpperCase()
+
+          )
+
+      );
+
+
+
+
+
+  // =====================================================
+  // TOTAL BERAT PER TANGGAL
+  // =====================================================
+
+  const totalBerat =
+
+    detailTanggal.reduce((sum, item) => {
+
+      return sum +
+        Number(item.beratSampah || 0);
+
+    }, 0);
+
+
+
+
+
+  // =====================================================
+  // TOTAL PEMASUKAN PER TANGGAL
+  // =====================================================
+
+  const totalPemasukan =
+
+    detailTanggal.reduce((sum, item) => {
+
+      return sum +
+        Number(item.totalNasabah || 0);
+
+    }, 0);
+
+
+  
+  // =====================================================
+  // TOTAL PENARIKAN
+  // =====================================================
+
+  const penarikanTanggal =
+    dataPenarikan.filter(item => {
+
+      return item.tgl === tgl;
+
+    });
+
+  const totalPenarikan =
+    penarikanTanggal.reduce((sum, item) => {
+
+      return sum +
+        Number(item.nominalPenarikan || 0);
+
+    }, 0);
+
+  // =====================================================
+  // SALDO
+  // =====================================================
+
+  const saldoTanggal =
+    saldoPerTanggal[tgl] || 0;
+
+
+
+
+  // =====================================================
+  // SATUAN
+  // =====================================================
+
+  const satuan =
+    detailTanggal[0]?.satuan || "";
+
+
+
+
+
+  // =====================================================
+  // GROUPING BERDASARKAN NAMA
+  // =====================================================
+
+  const grupNama = {};
+
+
+
+  detailTanggal.forEach(item => {
+
+    // ambil nama
+    const nama =
+      item.nama || "Tanpa Nama";
+
+
+
+    // jika nama belum ada
+    if (!grupNama[nama]) {
+
+      grupNama[nama] = [];
+
+    }
+
+
+
+    // masukkan item ke nama
+    grupNama[nama].push(item);
+
+  });
+
+
+
+
+
+
+
+  // =====================================================
+  // HTML PER NAMA
+  // =====================================================
+
+  const htmlNama =
+
+    Object.keys(grupNama)
+
+      // urut A-Z
+      .sort((a, b) =>
+        a.localeCompare(b)
+      )
+
+      // looping nama
+      .map(nama => {
+
+        // semua data milik nama tersebut
+        const items = grupNama[nama];
+
+
+
+
+
+        // ===============================================
+        // TOTAL BERAT PER ORANG
+        // ===============================================
+
+        const totalBeratOrang =
+
+          items.reduce((sum, item) => {
+
+            return sum +
+              Number(item.beratSampah || 0);
+
+          }, 0);
+
+
+
+
+
+        // ===============================================
+        // TOTAL PEMASUKAN PER ORANG
+        // ===============================================
+
+        const totalPemasukanOrang =
+
+          items.reduce((sum, item) => {
+
+            return sum +
+              Number(item.totalNasabah || 0);
+
+          }, 0);
+
+
+
+
+
+        // ===============================================
+        // TOTAL PENARIKAN
+        // sementara masih 0
+        // ===============================================
+
+        const totalPenarikan = dataPenarikan
+          .filter(p => p.nama === nama)
+          .reduce((sum, item) => {
+
+            return sum +
+              Number(item.nominalPenarikan || 0);
+
+          }, 0);
+
+
+
+
+
+        // ===============================================
+        // SALDO NASABAH
+        // ===============================================
+
+        const saldoNasabah =
+
+          totalPemasukanOrang -
+          totalPenarikan;
+
+
+
+
+
+        // ===============================================
+        // RETURN HTML PER ORANG
+        // ===============================================
+
+        return `
+
+          <div style="
+            border:1px solid #ddd;
+            border-radius:10px;
+            padding:10px;
+          ">
+
+            <!-- HEADER NAMA -->
+            <div style="
+              background:#000000;
+              color:white;
+              padding:10px;
+            ">
+
+              <b style="
+                font-size:16px;
+              ">
+                ${nama}
+              </b><br>
+
+              <small>
+                Total Berat:
+                <b>
+                  ${totalBeratOrang}
+                  ${items[0]?.satuan || ""}
+                </b>
+              </small><br>
+
+              <small>
+                Total Pemasukan:
+                Rp ${new Intl.NumberFormat("id-ID")
+                  .format(totalPemasukanOrang)}
+              </small>
+
+            </div>
+
+
+
+
+
+            <!-- DETAIL SAMPAH -->
+            ${items.map(item => `
+
+              <div style="
+                padding:8px 0;
+                border-bottom:1px solid #eee;
+              ">
+
+                Jenis Sampah:
+                <b>
+                  ${item.jenisSampah}
+                </b><br>
+
+                Berat:
+                <b>
+                  ${item.beratSampah}
+                  ${item.satuan}
+                </b><br>
+
+                Pemasukan:
+                <b>
+                  Rp ${new Intl.NumberFormat("id-ID")
+                    .format(item.totalNasabah)}
+                </b>
+
+              </div>
+
+            `).join("")}
+
+          </div>
+
+        `;
+
+      }).join("");
+
+
+
+  // =====================================================
+  // RETURN HTML PER TANGGAL
+  // =====================================================
+
+  return `
+
+    <div style="
+      border:1px solid #ddd;
+      border-radius:10px;
+      margin-bottom:10px;
+      overflow:hidden;
+      background:#fff;
+    ">
+
+      <!-- HEADER TANGGAL -->
+      <div
+        class="tanggal-header"
+        data-tgl="${tgl}"
+
+        style="
+          padding:12px;
+          background:#f5f5f5;
+          cursor:pointer;
+        "
+      >
+
+        <b>${tgl}</b><br>
+
+        <small>
+          Total Berat:
+          <b>
+            ${totalBerat}
+            ${satuan}
+          </b>
+        </small><br>
+
+        <small>
+          Total Pemasukan:
+          <b>
+            Rp ${new Intl.NumberFormat("id-ID")
+              .format(totalPemasukan)}
+          </b>
+        </small><br>
+
+        <small>
+          Total Penarikan:
+          Rp ${new Intl.NumberFormat("id-ID")
+            .format(totalPenarikan)}
+        </small><br>
+
+        <small>
+          Saldo Berjalan:
+          Rp ${new Intl.NumberFormat("id-ID")
+            .format(saldoTanggal)}
+        </small>
+
+      </div>
+
+
+
+
+
+      <!-- DETAIL -->
+      <div
+        class="detail-box"
+        id="detail-${tgl}"
+
+        style="
+          display:none;
+          padding:10px;
+        "
+      >
+
+        <!-- HASIL GROUPING -->
+        ${htmlNama}
+
+
+
+        <!-- TOTAL TANGGAL -->
+        <p>
+
+          <b>
+            Total Pemasukan:
+            Rp ${new Intl.NumberFormat("id-ID")
+              .format(totalPemasukan)}
+          </b>
+
+        </p>
+
+        <p>
+          <b>
+            Total Penarikan:
+            Rp ${new Intl.NumberFormat("id-ID")
+              .format(totalPenarikan)}
+          </b>
+        </p>
+
+        <p>
+          <b>
+            Saldo Berjalan:
+            Rp ${new Intl.NumberFormat("id-ID")
+              .format(saldoTanggal)}
+          </b>
+        </p>
+
+        <button class="btnPrint" data-tgl="${tgl}">
+          🖨️ Print Detail Nasabah
+        </button>
+
+      </div>
+
+    </div>
+
+  `;
+
+}).join("");
+
+
+// TOmbol load more/less
+  
+  listTerakhir.innerHTML += `
+
+<div style="
+  display:flex;
+  gap:10px;
+  margin-top:16px;
+">
+
+  ${
+    jumlahTanggalTampil < tanggalUnik.length
+    ? `
+      <button id="btnLoadMore" style="background-color: #666666;">
+        Load More
+      </button>
+    `
+    : ""
+  }
+
+  ${
+    jumlahTanggalTampil > 3
+    ? `
+      <button id="btnLoadLess" style="background-color: #666666;">
+        Load Less
+      </button>
+    `
+    : ""
+  }
+
+</div>
+
+`;
+
+
+
+
+// =========================================================
+// GRAND TOTAL SALDO
+// =========================================================
+
+const grandSaldo =
+  grandTotalPemasukan -
+  grandTotalPenarikan;
+
+
+
+// =========================================================
+// GRAND TOTAL
+// =========================================================
+
+listTerakhir.innerHTML += `
+
+  <div style="
+    padding:12px;
+    background:#2d89ef;
+    color:white;
+    border-radius:8px;
+  ">
+
+    <b>
+      Grand Total Pemasukan:
+      Rp ${new Intl.NumberFormat("id-ID")
+        .format(grandTotalPemasukan)}
+    </b><br>
+
+    <b>
+      Grand Total Berat:
+      ${grandTotalBerat} Kg
+    </b><br>
+
+    <b>
+      Grand Total Penarikan:
+      Rp ${new Intl.NumberFormat("id-ID")
+        .format(grandTotalPenarikan)}
+    </b><br>
+
+    <b>
+      Saldo Saat Ini:
+      Rp ${new Intl.NumberFormat("id-ID")
+        .format(grandSaldo)}
+    </b>
+
+  </div>
+
+`;
+    
+
+
+
+    // EVENT CLICK
+    document.querySelectorAll(".tanggal-header")
+      .forEach(header => {
+
+        header.addEventListener("click", () => {
+
+          const tgl = header.dataset.tgl;
+
+          const detail =
+            document.getElementById(`detail-${tgl}`);
+
+          if(detail.style.display === "none"){
+            detail.style.display = "block";
+          }else{
+            detail.style.display = "none";
+          }
+
+        });
+
+      });
+
+        // ================= LOAD MORE =================
+    const btnLoadMore =
+      document.getElementById("btnLoadMore");
+
+    if(btnLoadMore){
+
+      btnLoadMore.addEventListener("click", () => {
+
+        jumlahTanggalTampil += 3;
+
+        renderDetailNasabah();
+
+      });
+
+    }
+
+
+
+    // ================= LOAD LESS =================
+    const btnLoadLess =
+      document.getElementById("btnLoadLess");
+
+    if(btnLoadLess){
+
+      btnLoadLess.addEventListener("click", () => {
+
+        jumlahTanggalTampil -= 3;
+
+        if(jumlahTanggalTampil < 3){
+          jumlahTanggalTampil = 3;
+        }
+
+        renderDetailNasabah();
+
+      });
+
+    }
+
+}
+
+//getdetail nasabah
+
+async function getDetailNasabah(){
+
+  try {
+
+    const res = await fetch(
+      CONFIG.API_URL +
+      "?action=getDetailNasabah&id=" + idNasabah
+    );
+
+    const r = await res.json();
+
+    const resPenarikan = await fetch(
+      CONFIG.API_URL +
+      "?action=getDetailPenarikan&id=" + idNasabah
+    );
+
+    const rPenarikan =
+      await resPenarikan.json();
+
+    if(!r.ok){
+      listTerakhir.innerText = "Gagal memuat";
+      return;
+    }
+
+    // ================= SIMPAN GLOBAL =================
+    dataDetailNasabah = r.data || [];
+
+    dataPenarikanGlobal =
+      rPenarikan.data || [];
+
+    // ================= RENDER =================
+    renderDetailNasabah();
+
+  } catch(err){
+
+    console.log(err);
+
+    listTerakhir.innerText =
+      "Nasabah belum memiliki tabungan";
+
+  }
+
+}
+
+window.addEventListener("DOMContentLoaded", () => {
+  getDetailNasabah();
+
+  //setInterval(getDetailNasabah, 20000);
+});
+
+
+
+</script>
+<script src="printdetailnasabah.js"></script>
+</body>
+</html>

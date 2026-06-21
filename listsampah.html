@@ -1,0 +1,370 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<link rel="manifest" href="/manifest.json">
+<meta name="theme-color" content="#3B82C4" id="themeColor">
+<title>Data Sampah</title>
+<script src="auth.js"></script>
+<style>
+body{font-family:sans-serif;background:#f5f5f5;padding:16px}
+.card{background:white;padding:16px;border-radius:12px; margin-bottom: 20px;}
+
+input,textarea{
+  width:100%;
+  padding:10px;
+  margin:8px 0;
+  border-radius:8px;
+  border:1px solid #ccc;
+  box-sizing:border-box;
+}
+
+button{
+  width:100%;
+  padding:12px;
+  background:#4E6E58;
+  color:white;
+  border:none;
+  border-radius:8px;
+  cursor:pointer;
+  transition:0.2s;
+  margin-bottom: 10px;
+}
+
+button:hover{
+  background:#333333;
+  transform:translateY(-2px);
+}
+
+button:active{
+  transform:translateY(0);
+}
+
+button:disabled{
+  background:#999;
+  cursor:not-allowed;
+}
+
+.btnDataNasabah{
+  background:#546B41;
+}
+
+.btnDataNasabah:hover{
+  background:#555555;
+}
+
+.card h2 {
+  color: #4E6E58;
+}
+
+.list-item {
+  cursor: pointer;
+  border-radius: 8px;
+}
+
+.list-item:hover {
+  background-color: #999;
+  color: white;
+}
+
+.btnHapusSampah {
+  background: #ff4d4d;
+  color: white;
+  border: none;
+  padding: 6px 12px;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: 0.2s;
+  width: auto;
+  margin-top: 8px;
+}
+
+.btnEditSampah {
+  background: #333333;
+  color: white;
+  border: none;
+  padding: 6px 12px;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: 0.2s;
+  width: auto;
+  margin-top: 8px;
+}
+
+img{width:50%;margin-top:10px;border-radius:8px;justify-content:center;display:block;margin-left:auto;margin-right:auto}
+
+.loader {
+  border: 3px solid #eee;
+  border-top: 3px solid #2d89ef;
+  border-radius: 50%;
+  width: 20px;
+  height: 20px;
+  animation: spin 1s linear infinite;
+}
+
+.btnPrint {
+  background-color: #666666;
+}
+
+.btnPrintKhusus {
+  background-color: #666666;
+}
+
+@keyframes spin {
+  0% { transform: rotate(0deg);}
+  100% { transform: rotate(360deg);}
+}
+
+@media (min-width: 600px) {
+  button {
+    width: 100%;
+    margin: 10px auto;
+    display: block;
+  }
+
+  .card {
+    max-width: 400px;
+    margin: 20px auto;
+  }
+
+  .btnHapusSampah {
+    width: auto;
+    margin-top: 10px;
+    margin-left: 0px;
+    display: inline-block;
+  }
+
+  .btnEditSampah {
+    width: auto;
+    margin-top: 10px;
+    margin-left: 0px;
+    display: inline-block;
+  }
+  
+
+}
+</style>
+</head>
+
+<body>
+
+<div class="card">
+
+<h2>Data Sampah</h2>
+
+  <div id="listTerakhir">
+    <p>Memuat...</p>
+  </div>
+
+  <div style="margin-top:16px; display:flex; gap:10px;">
+
+  <button id="btnLoadMore" style="background-color: #666666;">
+    Load More
+  </button>
+
+  <button id="btnLoadLess" style="display:none; background-color: #666666;">
+    Load Less
+  </button>
+
+  </div>
+
+
+</div>
+
+<div class="card">
+  <button id="btnPrint" style="background-color: #666666;">🖨️ Print Data Sampah</button>
+  <button id="btnDashboard">Kembali</button>
+</div>
+
+
+<footer id="footer" style="text-align:center; margin-top:40px; color:#777; font-size:14px;">
+  © 2026 Banksampahdigital by mbayusubagja
+</footer>
+
+<script src="config.js"></script>
+
+<script>
+// ================= SIMPAN DATA =================
+const btnDashboard = document.getElementById("btnDashboard");
+const listTerakhir = document.getElementById("listTerakhir");
+const btnPrint = document.getElementById("btnPrint");
+
+btnDashboard.addEventListener("click", () => {
+  window.location.href = "datasampah.html";
+});
+
+// btn edit sampah
+function editSampah(e, id){
+  e.stopPropagation();
+  window.location.href = "datasampah.html?id=" + id;
+}
+
+// ================= TOAST =================
+function showToast(msg) {
+  const div = document.createElement("div");
+  div.innerText = msg;
+
+  div.style.position = "fixed";
+  div.style.bottom = "20px";
+  div.style.left = "50%";
+  div.style.transform = "translateX(-50%)";
+  div.style.background = "#333";
+  div.style.color = "#fff";
+  div.style.padding = "10px 20px";
+  div.style.borderRadius = "8px";
+  div.style.zIndex = "9999";
+
+  document.body.appendChild(div);
+
+  setTimeout(() => {
+    div.remove();
+  }, 2000);
+}
+
+let jumlahTampil = 5;
+let dataSampah = [];
+
+// ================= RENDER LIST =================
+function renderSampah(){
+
+  const dataTampil = dataSampah.slice(0, jumlahTampil);
+
+  listTerakhir.innerHTML = dataTampil.map(n => `
+
+    <div class="list-item" style="padding:10px; border-bottom:1px solid #eee">
+        <b>${n.jenisSampah}</b><br>
+        Satuan: ${n.satuan}<br>
+        Harga Nasabah: Rp ${new Intl.NumberFormat("id-ID").format(n.hargaNasabah)}<br>
+        Harga Jual: Rp ${new Intl.NumberFormat("id-ID").format(n.hargaJual)}<br>
+        <button class="btnEditSampah" onclick="editSampah(event, '${n.id}')">Edit</button>
+        <button class="btnHapusSampah" onclick="hapusSampah(event, '${n.id}')">Hapus</button>
+    </div>
+
+  `).join("");
+  // ================= tombol =================
+  btnLoadMore.style.display =
+    jumlahTampil >= dataSampah.length
+    ? "none"
+    : "inline-block";
+
+  btnLoadLess.style.display =
+    jumlahTampil <= 5
+    ? "none"
+    : "inline-block";
+
+}
+
+
+  
+
+// ================= LIST TERAKHIR =================
+async function getSampah(){
+
+  try {
+
+    const res = await fetch(
+      CONFIG.API_URL + "?action=getSampah"
+    );
+
+    const r = await res.json();
+
+    if(!r.ok){
+      listTerakhir.innerText = "Gagal memuat";
+      return;
+    }
+
+    dataSampah = r.data;
+
+    window.dataSampah = r.data;
+
+    dataSampah.sort((a, b) =>
+      a.jenisSampah.toUpperCase()
+       .localeCompare(b.jenisSampah.toUpperCase())
+    );
+
+    renderSampah();
+
+  } catch(err){
+
+    console.log(err);
+
+  }
+
+}
+
+// ================= LOAD MORE =================
+btnLoadMore.addEventListener("click", function(){
+
+  jumlahTampil += 5;
+
+  renderSampah();
+
+});
+
+// ================= LOAD LESS =================
+btnLoadLess.addEventListener("click", function(){
+
+  jumlahTampil -= 5;
+
+  if(jumlahTampil < 5){
+    jumlahTampil = 5;
+  }
+
+  renderSampah();
+
+});
+
+// ================= HAPUS SAMPAH =================
+async function hapusSampah(e, id){
+
+  e.stopPropagation();
+  
+  if(!confirm("Hapus sampah ini?")) return;
+
+  console.log("Hapus sampah dengan id:", id);
+
+  try{
+
+    const body = new URLSearchParams({
+      mode: "hapusSampah",
+      id: id
+    });
+
+    const res = await fetch(CONFIG.API_URL,{
+      method:"POST",
+      body: body
+    });
+
+    const r = await res.json();
+
+    if(!r.ok){
+      alert(r.message);
+      return;
+    }
+
+    alert("Sampah berhasil dihapus");
+
+    getSampah();
+
+  }catch(err){
+
+    console.log(err);
+    alert("Gagal menghapus sampah");
+
+  }
+
+}
+
+window.addEventListener("DOMContentLoaded", () => {
+  getSampah();
+
+  setInterval(getSampah, 20000);
+});
+
+
+
+</script>
+<script src="printsampah.js"></script>
+
+</body>
+</html>
