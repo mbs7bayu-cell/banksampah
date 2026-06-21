@@ -3,7 +3,7 @@
 <head>
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <link rel="manifest" href="/manifest.json">
-<meta name="theme-color" content="#3B82C4" id="themeColor">
+<meta name="theme-color" content="#4E6E58" id="themeColor">
 <title>Tambah Penimbangan</title>
 <script src="auth.js"></script>
 <style>
@@ -99,8 +99,6 @@ img{width:50%;margin-top:10px;border-radius:8px;justify-content:center;display:b
   height: 20px;
   animation: spin 1s linear infinite;
 }
-
-
 
 @keyframes spin {
   0% { transform: rotate(0deg);}
@@ -348,12 +346,6 @@ inputNama.addEventListener("input", function () {
 
     try{
 
-      hasilNama.innerHTML = `
-        <div class="item-nasabah">
-          Mencari...
-        </div>
-      `;
-
       const res = await fetch(
         `${CONFIG.API_URL}?action=cariNasabah&keyword=${encodeURIComponent(keyword)}`,
         {
@@ -389,7 +381,7 @@ inputNama.addEventListener("input", function () {
 
     }
 
-  }, 300);
+  }, 50);
 
 });
 
@@ -440,12 +432,6 @@ inputJenisSampah.addEventListener("input", function () {
 
     try{
 
-      hasilJenisSampah.innerHTML = `
-        <div class="item-jenis-sampah">
-          Mencari...
-        </div>
-      `;
-
       const res = await fetch(
         `${CONFIG.API_URL}?action=cariJenisSampah&keyword=${encodeURIComponent(keyword)}`,
         {
@@ -481,7 +467,7 @@ inputJenisSampah.addEventListener("input", function () {
 
     }
 
-  }, 300);
+  }, 50);
 
 });
 
