@@ -51,32 +51,35 @@ button:disabled{
 
 img{width:50%;margin-top:10px;border-radius:8px;justify-content:center;display:block;margin-left:auto;margin-right:auto}
 
-.item-nasabah{
-  padding: 8px;
-  cursor: pointer;
-  border-left: black 1px solid;
-  border-bottom: black 1px solid;
-  border-right: black 1px solid;
-  border-bottom-left-radius: 8px;
-  border-bottom-right-radius: 8px;
+#hasilNama,
+#hasilSampah{
+  background:#fff;
+  border:1px solid #ddd;
+  border-radius:8px;
+  overflow:hidden;
+  box-shadow:0 2px 8px rgba(0,0,0,.08);
+  margin-top:-6px;
+  margin-bottom:8px;
+  display: none;
 }
 
-.item-nasabah:hover{
-  background: #eee;
-}
-
+.item-nasabah,
 .item-jenis-sampah{
-  padding: 8px;
-  cursor: pointer;
-  border-left: black 1px solid;
-  border-bottom: black 1px solid;
-  border-right: black 1px solid;
-  border-bottom-left-radius: 8px;
-  border-bottom-right-radius: 8px;
+  padding:10px 12px;
+  border:none;
+  border-bottom:1px solid #eee;
+  cursor:pointer;
+  transition:.2s;
 }
 
+.item-nasabah:last-child,
+.item-jenis-sampah:last-child{
+  border-bottom:none;
+}
+
+.item-nasabah:hover,
 .item-jenis-sampah:hover{
-  background: #eee;
+  background:#f5f7f8;
 }
 
 .btnHapusPenimbangan {
@@ -394,10 +397,20 @@ inputNama.addEventListener("input", () => {
 
 function renderNasabah(data){
 
+  if(data.length === 0){
+    hasilNama.style.display = "none";
+    hasilNama.innerHTML = "";
+    return;
+  }
+
+  hasilNama.style.display = "block";
+
   hasilNama.innerHTML = data.map(item => `
     <div class="item-nasabah"
       onclick='pilihNasabah(${JSON.stringify(item)})'>
-      ${item.nama} - ${item.noHp}
+      👤 <b>${item.nama}</b>
+      <br>
+      <small>${item.noHp || "-"}</small>
     </div>
   `).join("");
 
@@ -460,10 +473,18 @@ inputJenisSampah.addEventListener("input", () => {
 
 function renderSampah(data){
 
+  if(data.length === 0){
+    hasilJenisSampah.style.display = "none";
+    hasilJenisSampah.innerHTML = "";
+    return;
+  }
+
+  hasilJenisSampah.style.display = "block";
+
   hasilJenisSampah.innerHTML = data.map(item => `
     <div class="item-jenis-sampah"
       onclick='pilihJenisSampah(${JSON.stringify(item)})'>
-      ${item.jenisSampah}
+      ♻️ <b>${item.jenisSampah}</b>
     </div>
   `).join("");
 
@@ -618,6 +639,7 @@ document.addEventListener("click", function(e){
   ){
 
     hasilJenisSampah.innerHTML = "";
+    hasilJenisSampah.style.display = "none";
 
   }
 
@@ -632,6 +654,7 @@ document.addEventListener("click", function(e){
   ){
 
     hasilNama.innerHTML = "";
+    hasilNama.style.display = "none";
 
   }
 
