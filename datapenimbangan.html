@@ -100,6 +100,19 @@ img{width:50%;margin-top:10px;border-radius:8px;justify-content:center;display:b
   animation: spin 1s linear infinite;
 }
 
+#btnGantiNasabah{
+  width:auto;
+  background:#777;
+  padding:8px 15px;
+  font-size:13px;
+  margin-top:5px;
+}
+
+.input-lock{
+  background:#f1f1f1;
+  color:#555;
+}
+
 @keyframes spin {
   0% { transform: rotate(0deg);}
   100% { transform: rotate(360deg);}
@@ -141,6 +154,14 @@ img{width:50%;margin-top:10px;border-radius:8px;justify-content:center;display:b
     <input id="nama" type="text" placeholder="Nama Nasabah" required>
     <div id="hasilNama"></div>
     <input id="nasabahId" type="hidden" placeholder="Nasabah ID" required>
+
+    <button 
+      id="btnGantiNasabah"
+      type="button"
+      style="display:none;">
+      🔄 Ganti Nasabah
+    </button>
+
     <input id="jenisSampah" placeholder="Jenis Sampah" required>
     <div id="hasilSampah"></div>
     <input id="sampahId" type="hidden" placeholder="Sampah ID" required>
@@ -183,6 +204,9 @@ const status = document.getElementById("status");
 const btnDashboard = document.getElementById("btnDashboard");
 const btnPenimbangan = document.getElementById("btnPenimbangan");
 const btnSortir = document.getElementById("btnSortir");
+const btnGantiNasabah =
+document.getElementById("btnGantiNasabah");
+
 
 btnSortir.addEventListener("click", () => {
   window.location.href = "sortir.html";
@@ -306,82 +330,65 @@ function resetForm(){
   document.getElementById("jenisSampah").value = "";
   document.getElementById("beratSampah").value = "";
   document.getElementById("sampahId").value = "";
-  document.getElementById("nama").value = "";
-  document.getElementById("nasabahId").value = "";
 }
 
 // =================== cari nama nasabah =================
 const inputNama = document.getElementById("nama");
 const hasilNama = document.getElementById("hasilNama");
 
-let timeoutNama;
-let controllerNama;
-const cacheNasabah = {};
+// =============== load nasabah ====================
+let semuaNasabah = [];
 
-inputNama.addEventListener("input", function () {
+async function loadNasabah(){
 
-  clearTimeout(timeoutNama);
+  try{
 
-  timeoutNama = setTimeout(async () => {
+    const res = await fetch(
+      `${CONFIG.API_URL}?action=getNasabah`
+    );
 
-    const keyword = inputNama.value.trim();
+    const data = await res.json();
 
-    if(keyword.length < 2){
-      hasilNama.innerHTML = "";
-      return;
+    if(data.ok){
+      semuaNasabah = data.data;
     }
 
-    // ambil dari cache
-    if(cacheNasabah[keyword]){
-      renderNasabah(cacheNasabah[keyword]);
-      return;
-    }
+  }catch(err){
+    console.error(err);
+  }
 
-    // batalkan request sebelumnya
-    if(controllerNama){
-      controllerNama.abort();
-    }
+}
 
-    controllerNama = new AbortController();
+inputNama.addEventListener("input", () => {
 
-    try{
+  const keyword =
+    inputNama.value
+    .toLowerCase()
+    .trim();
 
-      const res = await fetch(
-        `${CONFIG.API_URL}?action=cariNasabah&keyword=${encodeURIComponent(keyword)}`,
-        {
-          signal: controllerNama.signal
-        }
-      );
+  if(keyword.length < 2){
 
-      const data = await res.json();
+    hasilNama.innerHTML = "";
+    return;
 
-      if(!data.ok){
-        hasilNama.innerHTML = "";
-        return;
-      }
+  }
 
-      // simpan cache
-      cacheNasabah[keyword] = data.data;
+  const hasil = semuaNasabah
+    .filter(item =>
 
-      renderNasabah(data.data);
+      item.nama
+      .toLowerCase()
+      .includes(keyword)
 
-    }catch(err){
+      ||
 
-      if(err.name === "AbortError"){
-        return;
-      }
+      String(item.hp)
+      .includes(keyword)
 
-      console.error(err);
+    )
+    .slice(0,5);
 
-      hasilNama.innerHTML = `
-        <div class="item-nasabah">
-          Error saat mencari
-        </div>
-      `;
-
-    }
-
-  }, 50);
+  renderNasabah(hasil);
 
 });
 
@@ -390,7 +397,7 @@ function renderNasabah(data){
   hasilNama.innerHTML = data.map(item => `
     <div class="item-nasabah"
       onclick='pilihNasabah(${JSON.stringify(item)})'>
-      ${item.nama} - ${item.hp}
+      ${item.nama} - ${item.noHp}
     </div>
   `).join("");
 
@@ -400,74 +407,54 @@ function renderNasabah(data){
 const inputJenisSampah = document.getElementById("jenisSampah");
 const hasilJenisSampah = document.getElementById("hasilSampah");
 
-let timeoutSampah;
-let controllerSampah;
-const cacheSampah = {};
+// =============== load sampah ====================
+let semuaSampah = [];
 
-inputJenisSampah.addEventListener("input", function () {
+async function loadSampah(){
 
-  clearTimeout(timeoutSampah);
+  try{
 
-  timeoutSampah = setTimeout(async () => {
+    const res = await fetch(
+      `${CONFIG.API_URL}?action=getSampah`
+    );
 
-    const keyword = inputJenisSampah.value.trim();
+    const data = await res.json();
 
-    if(keyword.length < 2){
-      hasilJenisSampah.innerHTML = "";
-      return;
+    if(data.ok){
+      semuaSampah = data.data;
     }
 
-    // ambil dari cache
-    if(cacheSampah[keyword]){
-      renderSampah(cacheSampah[keyword]);
-      return;
-    }
+  }catch(err){
+    console.error(err);
+  }
 
-    // batalkan request sebelumnya
-    if(controllerSampah){
-      controllerSampah.abort();
-    }
+}
 
-    controllerSampah = new AbortController();
+inputJenisSampah.addEventListener("input", () => {
 
-    try{
+  const keyword =
+    inputJenisSampah.value
+    .toLowerCase()
+    .trim();
 
-      const res = await fetch(
-        `${CONFIG.API_URL}?action=cariJenisSampah&keyword=${encodeURIComponent(keyword)}`,
-        {
-          signal: controllerSampah.signal
-        }
-      );
+  if(keyword.length < 2){
 
-      const data = await res.json();
+    hasilJenisSampah.innerHTML = "";
+    return;
 
-      if(!data.ok){
-        hasilJenisSampah.innerHTML = "";
-        return;
-      }
+  }
 
-      // simpan cache
-      cacheSampah[keyword] = data.data;
+  const hasil = semuaSampah
+    .filter(item =>
 
-      renderSampah(data.data);
+      item.jenisSampah
+      .toLowerCase()
+      .includes(keyword)
 
-    }catch(err){
+    )
+    .slice(0,5);
 
-      if(err.name === "AbortError"){
-        return;
-      }
-
-      console.error(err);
-
-      hasilJenisSampah.innerHTML = `
-        <div class="item-jenis-sampah">
-          Error saat mencari
-        </div>
-      `;
-
-    }
-
-  }, 50);
+  renderSampah(hasil);
 
 });
 
@@ -530,6 +517,12 @@ function pilihNasabah(item){
   document.getElementById("nama").value = item.nama.toUpperCase();
 
   document.getElementById("nasabahId").value = item.id;
+
+  nama.readOnly = true;
+
+  nama.classList.add("input-lock");
+
+  btnGantiNasabah.style.display="block";
 
   hasilNama.innerHTML = "";
   
@@ -595,6 +588,23 @@ document.getElementById("beratSampah").addEventListener("input", function(){
   }else{
     document.getElementById("totalNasabah").value = "";
   }
+
+});
+
+
+btnGantiNasabah.addEventListener("click",()=>{
+
+  nama.value="";
+  nasabahId.value="";
+
+  nama.readOnly=false;
+
+  nama.classList.remove("input-lock");
+  
+
+  btnGantiNasabah.style.display="none";
+
+  nama.focus();
 
 });
 
@@ -690,6 +700,8 @@ window.addEventListener("DOMContentLoaded", () => {
 
   // load data terakhir
   getListPenimbangan();
+  loadNasabah();
+  loadSampah();
 
   setInterval(getListPenimbangan, 5000);
 

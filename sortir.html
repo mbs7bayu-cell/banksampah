@@ -292,75 +292,54 @@ function resetForm(){
 const inputJenisSampah = document.getElementById("jenisSampah");
 const hasilJenisSampah = document.getElementById("hasilSampah");
 
-let timeoutSampah;
-let controllerSampah;
-const cacheSampah = {};
+// =============== load sampah ====================
+let semuaSampah = [];
 
-inputJenisSampah.addEventListener("input", function () {
+async function loadSampah(){
 
-  clearTimeout(timeoutSampah);
+  try{
 
-  timeoutSampah = setTimeout(async () => {
+    const res = await fetch(
+      `${CONFIG.API_URL}?action=getSampah`
+    );
 
-    const keyword = inputJenisSampah.value.trim();
+    const data = await res.json();
 
-    if(keyword.length < 2){
-      hasilJenisSampah.innerHTML = "";
-      return;
+    if(data.ok){
+      semuaSampah = data.data;
     }
 
-    // ambil dari cache
-    if(cacheSampah[keyword]){
-      renderSampah(cacheSampah[keyword]);
-      return;
-    }
+  }catch(err){
+    console.error(err);
+  }
 
-    // batalkan request sebelumnya
-    if(controllerSampah){
-      controllerSampah.abort();
-    }
+}
 
-    controllerSampah = new AbortController();
+inputJenisSampah.addEventListener("input", () => {
 
-    try{
+  const keyword =
+    inputJenisSampah.value
+    .toLowerCase()
+    .trim();
 
+  if(keyword.length < 2){
 
-      const res = await fetch(
-        `${CONFIG.API_URL}?action=cariJenisSampah&keyword=${encodeURIComponent(keyword)}`,
-        {
-          signal: controllerSampah.signal
-        }
-      );
+    hasilJenisSampah.innerHTML = "";
+    return;
 
-      const data = await res.json();
+  }
 
-      if(!data.ok){
-        hasilJenisSampah.innerHTML = "";
-        return;
-      }
+  const hasil = semuaSampah
+    .filter(item =>
 
-      // simpan cache
-      cacheSampah[keyword] = data.data;
+      item.jenisSampah
+      .toLowerCase()
+      .includes(keyword)
 
-      renderSampah(data.data);
+    )
+    .slice(0,5);
 
-    }catch(err){
-
-      if(err.name === "AbortError"){
-        return;
-      }
-
-      console.error(err);
-
-      hasilJenisSampah.innerHTML = `
-        <div class="item-jenis-sampah">
-          Error saat mencari
-        </div>
-      `;
-
-    }
-
-  }, 50);
+  renderSampah(hasil);
 
 });
 
@@ -533,6 +512,7 @@ window.addEventListener("DOMContentLoaded", () => {
   tanggal.value = `${yyyy}-${mm}-${dd}`;
 
   getListSortir();
+  loadSampah();
 
   setInterval(getListSortir, 5000);
 });
