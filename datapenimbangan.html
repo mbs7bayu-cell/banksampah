@@ -103,7 +103,7 @@ img{width:50%;margin-top:10px;border-radius:8px;justify-content:center;display:b
   animation: spin 1s linear infinite;
 }
 
-#btnGantiNasabah{
+#btnGantiNasabah, #btnGantiSampah {
   width:auto;
   background:#777;
   padding:8px 15px;
@@ -167,6 +167,14 @@ img{width:50%;margin-top:10px;border-radius:8px;justify-content:center;display:b
 
     <input id="jenisSampah" placeholder="Jenis Sampah" required>
     <div id="hasilSampah"></div>
+
+    <button 
+      id="btnGantiSampah"
+      type="button"
+      style="display:none;">
+      🔄 Ganti Jenis Sampah
+    </button>
+
     <input id="sampahId" type="hidden" placeholder="Sampah ID" required>
     <input id="beratSampah" type="number" placeholder="Berat Sampah" required>
     <input id="satuan" type="hidden" placeholder="Satuan" required readonly>
@@ -209,6 +217,8 @@ const btnPenimbangan = document.getElementById("btnPenimbangan");
 const btnSortir = document.getElementById("btnSortir");
 const btnGantiNasabah =
 document.getElementById("btnGantiNasabah");
+const btnGantiSampah =
+document.getElementById("btnGantiSampah");
 
 
 btnSortir.addEventListener("click", () => {
@@ -285,6 +295,9 @@ btnSimpan.addEventListener("click", async function () {
     status.innerHTML =
       "✅ Penimbangan : " + "<b>" + nama + "</b>" + ", jenis sampah : " + "<b>" + jenisSampah + "</b>" + " tersimpan.";
     resetForm();
+
+    gantiSampah();
+
 
   } catch (err) {
     console.log(err);
@@ -570,6 +583,12 @@ function pilihJenisSampah(item){
   
   document.getElementById("satuan").value = item.satuan;
 
+  jenisSampah.readOnly = true;
+
+  jenisSampah.classList.add("input-lock");
+
+  btnGantiSampah.style.display="block";
+
   hasilJenisSampah.innerHTML = "";
           console.log(item);
 
@@ -627,6 +646,27 @@ btnGantiNasabah.addEventListener("click",()=>{
 
   nama.focus();
 
+});
+
+function gantiSampah () {
+
+  jenisSampah.value="";
+  sampahId.value="";
+
+  jenisSampah.readOnly=false;
+
+  jenisSampah.classList.remove("input-lock");
+  
+
+  btnGantiSampah.style.display="none";
+
+  jenisSampah.focus();
+
+}
+
+btnGantiSampah.addEventListener("click",()=>{ 
+
+  gantiSampah();
 });
 
 
