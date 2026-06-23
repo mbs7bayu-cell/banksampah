@@ -163,7 +163,7 @@ img{width:50%;margin-top:10px;border-radius:8px;justify-content:center;display:b
     <input id="nama" placeholder="Nama" required>
     <div id="hasilNama"></div>
     <input id="nasabahId" placeholder="Nasabah ID" required readonly>
-    <input id="nominal" type="number" placeholder="Nominal Penarikan" required>
+    <input id="nominal" type="number" placeholder="Nominal Penarikan" inputmode="numeric" required>
 </div>
 
 <p id="status"></p>
@@ -294,52 +294,82 @@ btnSimpan.addEventListener("click", async function () {
 });
 
 
-inputNama.addEventListener("input", async function () {
+// =============== load nasabah ====================
+let semuaNasabah = [];
 
-  const keyword = inputNama.value.trim();
-
-  if(keyword.length < 2){
-    hasilNama.innerHTML = "";
-    return;
-  }
+async function loadNasabah(){
 
   try{
 
     const res = await fetch(
-      `${CONFIG.API_URL}?action=cariNasabah&keyword=${encodeURIComponent(keyword)}`
+      `${CONFIG.API_URL}?action=getNasabah`
     );
 
     const data = await res.json();
 
-    hasilNama.innerHTML = "";
-
     if(data.ok){
-
-      data.data.forEach(item => {
-
-        hasilNama.innerHTML += `
-          <div class="item-nasabah"
-            onclick='pilihNasabah(${JSON.stringify(item)})'>
-            ${item.nama}
-          </div>
-        `;
-
-
-      });
-
+      semuaNasabah = data.data;
     }
 
   }catch(err){
-
     console.error(err);
+  }
 
-    hasilNama.innerHTML = `
-      <p>Error saat mencari nasabah</p>
-    `;
+}
+
+inputNama.addEventListener("input", () => {
+
+  const keyword =
+    inputNama.value
+    .toLowerCase()
+    .trim();
+
+  if(keyword.length < 2){
+
+    hasilNama.innerHTML = "";
+    return;
 
   }
 
+  const hasil = semuaNasabah
+    .filter(item =>
+
+      item.nama
+      .toLowerCase()
+      .includes(keyword)
+
+      ||
+
+      String(item.hp)
+      .includes(keyword)
+
+    )
+    .slice(0,5);
+
+  renderNasabah(hasil);
+
 });
+
+function renderNasabah(data){
+
+  if(data.length === 0){
+    hasilNama.style.display = "none";
+    hasilNama.innerHTML = "";
+    return;
+  }
+
+  hasilNama.style.display = "block";
+
+  hasilNama.innerHTML = data.map(item => `
+    <div class="item-nasabah"
+      onclick='pilihNasabah(${JSON.stringify(item)})'>
+      👤 <b>${item.nama}</b>
+      <br>
+      <small>${item.noHp || "-"}</small>
+    </div>
+  `).join("");
+
+}
 
 //============== validasi input form ==================
 
@@ -467,6 +497,8 @@ window.addEventListener("DOMContentLoaded", () => {
 
   
   getPenarikanTerakhir();
+
+  loadNasabah();
 
   setInterval(getPenarikanTerakhir, 20000);
 });
