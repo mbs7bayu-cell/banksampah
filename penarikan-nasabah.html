@@ -483,6 +483,28 @@ async function hapusPenarikan(e, id){
 
 }
 
+
+// ================== format rupiah ==================
+function formatInputRupiah(id){
+
+  const input = document.getElementById(id);
+
+  input.addEventListener("input", function () {
+
+    let angka = this.value.replace(/\D/g, "");
+
+    if(!angka){
+      this.value = "";
+      return;
+    }
+
+    this.value = "Rp " + new Intl.NumberFormat("id-ID").format(angka);
+
+  });
+
+}
+
+
 window.addEventListener("DOMContentLoaded", () => {
 
 // tanggal hari ini
@@ -499,6 +521,8 @@ window.addEventListener("DOMContentLoaded", () => {
   getPenarikanTerakhir();
 
   loadNasabah();
+
+  formatInputRupiah(nominal);
 
   setInterval(getPenarikanTerakhir, 20000);
 });
