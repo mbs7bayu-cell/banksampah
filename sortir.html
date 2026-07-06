@@ -51,6 +51,18 @@ button:disabled{
 
 img{width:50%;margin-top:10px;border-radius:8px;justify-content:center;display:block;margin-left:auto;margin-right:auto}
 
+#hasilNama,
+#hasilSampah{
+  background:#fff;
+  border:1px solid #ddd;
+  border-radius:8px;
+  overflow:hidden;
+  box-shadow:0 2px 8px rgba(0,0,0,.08);
+  margin-top:-6px;
+  margin-bottom:8px;
+  display: none;
+}
+
 .item-nasabah{
   padding: 8px;
   cursor: pointer;
@@ -65,18 +77,23 @@ img{width:50%;margin-top:10px;border-radius:8px;justify-content:center;display:b
   background: #eee;
 }
 
+.item-nasabah,
 .item-jenis-sampah{
-  padding: 8px;
-  cursor: pointer;
-  border-left: black 1px solid;
-  border-bottom: black 1px solid;
-  border-right: black 1px solid;
-  border-bottom-left-radius: 8px;
-  border-bottom-right-radius: 8px;
+  padding:10px 12px;
+  border:none;
+  border-bottom:1px solid #eee;
+  cursor:pointer;
+  transition:.2s;
 }
 
+.item-nasabah:last-child,
+.item-jenis-sampah:last-child{
+  border-bottom:none;
+}
+
+.item-nasabah:hover,
 .item-jenis-sampah:hover{
-  background: #eee;
+  background:#f5f7f8;
 }
 
 .btnHapusSortir {
@@ -98,6 +115,19 @@ img{width:50%;margin-top:10px;border-radius:8px;justify-content:center;display:b
   width: 20px;
   height: 20px;
   animation: spin 1s linear infinite;
+}
+
+#btnGantiNasabah, #btnGantiSampah {
+  width:auto;
+  background:#777;
+  padding:8px 15px;
+  font-size:13px;
+  margin-top:5px;
+}
+
+.input-lock{
+  background:#f1f1f1;
+  color:#555;
 }
 
 @keyframes spin {
@@ -140,6 +170,14 @@ img{width:50%;margin-top:10px;border-radius:8px;justify-content:center;display:b
     <input id="tanggal" type="date" placeholder="Tanggal" required>
     <input id="jenisSampah" placeholder="Jenis Sampah" required>
     <div id="hasilSampah"></div>
+
+    <button 
+      id="btnGantiSampah"
+      type="button"
+      style="display:none;">
+      🔄 Ganti Jenis Sampah
+    </button>
+
     <input id="sampahId" type="hidden" placeholder="Sampah ID" required>
     <input id="beratSampah" type="number" placeholder="Berat Sampah" required>
     <input id="satuan" type="hidden" placeholder="Satuan" required readonly>
@@ -176,6 +214,9 @@ const btnSimpan = document.getElementById("btnSimpan");
 const status = document.getElementById("status");
 const btnDashboard = document.getElementById("btnDashboard");
 const btnSortir = document.getElementById("btnSortir");
+const btnGantiSampah =
+document.getElementById("btnGantiSampah");
+
 
 btnDashboard.addEventListener("click", () => {
   window.location.href = "datapenimbangan.html";
@@ -239,6 +280,9 @@ btnSimpan.addEventListener("click", async function () {
     status.innerHTML =
       "✅ Sortir : " + "jenis sampah : " + "<b>" + jenisSampah + "</b>" + " berhasil.";
     resetForm();
+
+        gantiSampah();
+
 
   } catch (err) {
     console.log(err);
@@ -345,10 +389,17 @@ inputJenisSampah.addEventListener("input", () => {
 
 function renderSampah(data){
 
+  if(data.length === 0){
+    hasilJenisSampah.style.display = "none";
+    hasilJenisSampah.innerHTML = "";
+    return;
+  }
+
+  hasilJenisSampah.style.display = "block";
   hasilJenisSampah.innerHTML = data.map(item => `
     <div class="item-jenis-sampah"
       onclick='pilihJenisSampah(${JSON.stringify(item)})'>
-      ${item.jenisSampah}
+      ♻️ <b>${item.jenisSampah}</b>
     </div>
   `).join("");
 
@@ -410,10 +461,37 @@ function pilihJenisSampah(item){
 
   document.getElementById("satuan").value = item.satuan;
 
+  jenisSampah.readOnly = true;
+
+  jenisSampah.classList.add("input-lock");
+
+  btnGantiSampah.style.display="block";
+
   hasilJenisSampah.innerHTML = "";
           console.log(item);
   
 }
+
+function gantiSampah () {
+
+  jenisSampah.value="";
+  sampahId.value="";
+
+  jenisSampah.readOnly=false;
+
+  jenisSampah.classList.remove("input-lock");
+  
+
+  btnGantiSampah.style.display="none";
+
+  jenisSampah.focus();
+
+}
+
+btnGantiSampah.addEventListener("click",()=>{ 
+
+  gantiSampah();
+});
 
 // ================= HITUNG TOTAL JUAL =================
 document.getElementById("beratSampah").addEventListener("input", function(){
@@ -442,6 +520,8 @@ document.addEventListener("click", function(e){
   ){
 
     hasilJenisSampah.innerHTML = "";
+    hasilJenisSampah.style.display = "none";
+
 
   }
 

@@ -163,7 +163,7 @@ img{width:50%;margin-top:10px;border-radius:8px;justify-content:center;display:b
     <input id="nama" placeholder="Nama" required>
     <div id="hasilNama"></div>
     <input id="nasabahId" placeholder="Nasabah ID" required readonly>
-    <input id="nominal" type="number" placeholder="Nominal Penarikan" inputmode="numeric" required>
+    <input id="nominal" type="number" placeholder="Nominal Penarikan" required>
 </div>
 
 <p id="status"></p>
@@ -294,82 +294,52 @@ btnSimpan.addEventListener("click", async function () {
 });
 
 
-// =============== load nasabah ====================
-let semuaNasabah = [];
+inputNama.addEventListener("input", async function () {
 
-async function loadNasabah(){
+  const keyword = inputNama.value.trim();
+
+  if(keyword.length < 2){
+    hasilNama.innerHTML = "";
+    return;
+  }
 
   try{
 
     const res = await fetch(
-      `${CONFIG.API_URL}?action=getNasabah`
+      `${CONFIG.API_URL}?action=cariNasabah&keyword=${encodeURIComponent(keyword)}`
     );
 
     const data = await res.json();
 
+    hasilNama.innerHTML = "";
+
     if(data.ok){
-      semuaNasabah = data.data;
+
+      data.data.forEach(item => {
+
+        hasilNama.innerHTML += `
+          <div class="item-nasabah"
+            onclick='pilihNasabah(${JSON.stringify(item)})'>
+            ${item.nama}
+          </div>
+        `;
+
+
+      });
+
     }
 
   }catch(err){
+
     console.error(err);
-  }
 
-}
-
-inputNama.addEventListener("input", () => {
-
-  const keyword =
-    inputNama.value
-    .toLowerCase()
-    .trim();
-
-  if(keyword.length < 2){
-
-    hasilNama.innerHTML = "";
-    return;
+    hasilNama.innerHTML = `
+      <p>Error saat mencari nasabah</p>
+    `;
 
   }
-
-  const hasil = semuaNasabah
-    .filter(item =>
-
-      item.nama
-      .toLowerCase()
-      .includes(keyword)
-
-      ||
-
-      String(item.hp)
-      .includes(keyword)
-
-    )
-    .slice(0,5);
-
-  renderNasabah(hasil);
 
 });
-
-function renderNasabah(data){
-
-  if(data.length === 0){
-    hasilNama.style.display = "none";
-    hasilNama.innerHTML = "";
-    return;
-  }
-
-  hasilNama.style.display = "block";
-
-  hasilNama.innerHTML = data.map(item => `
-    <div class="item-nasabah"
-      onclick='pilihNasabah(${JSON.stringify(item)})'>
-      👤 <b>${item.nama}</b>
-      <br>
-      <small>${item.noHp || "-"}</small>
-    </div>
-  `).join("");
-
-}
 
 //============== validasi input form ==================
 
@@ -483,28 +453,6 @@ async function hapusPenarikan(e, id){
 
 }
 
-
-// ================== format rupiah ==================
-function formatInputRupiah(id){
-
-  const input = document.getElementById(id);
-
-  input.addEventListener("input", function () {
-
-    let angka = this.value.replace(/\D/g, "");
-
-    if(!angka){
-      this.value = "";
-      return;
-    }
-
-    this.value = "Rp " + new Intl.NumberFormat("id-ID").format(angka);
-
-  });
-
-}
-
-
 window.addEventListener("DOMContentLoaded", () => {
 
 // tanggal hari ini
@@ -519,10 +467,6 @@ window.addEventListener("DOMContentLoaded", () => {
 
   
   getPenarikanTerakhir();
-
-  loadNasabah();
-
-  formatInputRupiah(nominal);
 
   setInterval(getPenarikanTerakhir, 20000);
 });
